@@ -1,0 +1,89 @@
+{
+  "input_image": "data/men.png",
+  "prompt": "Add stylish black sunglasses to his face, photorealistic, high quality",
+  "ttflux_paper_reference": {
+    "model": "FLUX.1-dev",
+    "benchmark": "DrawBench",
+    "clip_score": 0.71,
+    "aesthetic": 5.79,
+    "imagereward": 0.97
+  },
+  "ttflux": {
+    "method": "Random Search (Best of N by CLIPScore)",
+    "model": "Qwen-Image-Edit",
+    "best_candidate_idx": 3,
+    "metrics": {
+      "clip_score": 0.2652372169494629,
+      "aesthetic": 5.726675033569336,
+      "imagereward": 0.0,
+      "lpips": 0.6331824660301208,
+      "candidate_idx": 3
+    },
+    "all_candidates": [
+      {
+        "clip_score": 0.24289718627929688,
+        "aesthetic": 5.641158580780029,
+        "imagereward": 0.0,
+        "lpips": 0.5860474705696106,
+        "candidate_idx": 0
+      },
+      {
+        "clip_score": 0.24955780029296876,
+        "aesthetic": 5.5745344161987305,
+        "imagereward": 0.0,
+        "lpips": 0.5904279351234436,
+        "candidate_idx": 1
+      },
+      {
+        "clip_score": 0.2509865188598633,
+        "aesthetic": 5.649261951446533,
+        "imagereward": 0.0,
+        "lpips": 0.5904011726379395,
+        "candidate_idx": 2
+      },
+      {
+        "clip_score": 0.2652372169494629,
+        "aesthetic": 5.726675033569336,
+        "imagereward": 0.0,
+        "lpips": 0.6331824660301208,
+        "candidate_idx": 3
+      }
+    ]
+  },
+  "eacps": {
+    "method": "Multi-stage Search (EACPS)",
+    "model": "Qwen-Image-Edit",
+    "metrics": {
+      "clip_score": 0.2652372169494629,
+      "aesthetic": 5.726675033569336,
+      "imagereward": 0.0,
+      "lpips": 0.6331824660301208
+    }
+  },
+  "comparison": {
+    "clip_score": {
+      "ttflux": 0.2652372169494629,
+      "eacps": 0.2652372169494629,
+      "delta": 0.0,
+      "winner": "TT-FLUX"
+    },
+    "aesthetic": {
+      "ttflux": 5.726675033569336,
+      "eacps": 5.726675033569336,
+      "delta": 0.0,
+      "winner": "TT-FLUX"
+    },
+    "lpips": {
+      "ttflux": 0.6331824660301208,
+      "eacps": 0.6331824660301208,
+      "delta": 0.0,
+      "winner": "TT-FLUX"
+    }
+  },
+  "config": {
+    "num_samples": 4,
+    "k_global": 4,
+    "m_global": 2,
+    "k_local": 2
+  }
+}

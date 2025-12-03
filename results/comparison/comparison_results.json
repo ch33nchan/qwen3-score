@@ -1,0 +1,146 @@
+{
+  "input_image": "data/men.png",
+  "prompt": "Generate an ultra-realistic 4K portrait of a young Indian man standing on a city street at night under neon lights. He is wearing a black bomber jacket, slim-fit jeans and premium sneakers. Wet asphalt reflecting colorful lights. Background softly blurred with moving traffic bokeh. Sharp facial details, visible skin pores, natural texture, sharp jawline, realistic hairstyle. Shot on Sony A7R V, 85mm lens, shallow depth of field, cinematic color grading, dramatic shadows, ultra-HD, hyper-realism",
+  "ttflux": {
+    "best_candidate_idx": 6,
+    "all_candidates": [
+      {
+        "method": "TT-FLUX (Random Search)",
+        "candidate_idx": 0,
+        "clip_score": 27.754554748535156,
+        "aesthetic_score": 5.999999910593033,
+        "imagereward": null,
+        "pf": 27.754554748535156,
+        "cons": 0.673072338104248,
+        "lpips": 0.6855005025863647
+      },
+      {
+        "method": "TT-FLUX (Random Search)",
+        "candidate_idx": 1,
+        "clip_score": 28.849700927734375,
+        "aesthetic_score": 6.0,
+        "imagereward": null,
+        "pf": 28.84969711303711,
+        "cons": 0.6934395432472229,
+        "lpips": 0.6809170842170715
+      },
+      {
+        "method": "TT-FLUX (Random Search)",
+        "candidate_idx": 2,
+        "clip_score": 28.670866012573242,
+        "aesthetic_score": 6.0,
+        "imagereward": null,
+        "pf": 28.670866012573242,
+        "cons": 0.8066112399101257,
+        "lpips": 0.6871134042739868
+      },
+      {
+        "method": "TT-FLUX (Random Search)",
+        "candidate_idx": 3,
+        "clip_score": 29.820161819458008,
+        "aesthetic_score": 5.999999821186066,
+        "imagereward": null,
+        "pf": 29.82015609741211,
+        "cons": 0.7351764440536499,
+        "lpips": 0.6938822269439697
+      },
+      {
+        "method": "TT-FLUX (Random Search)",
+        "candidate_idx": 4,
+        "clip_score": 27.877696990966797,
+        "aesthetic_score": 6.0,
+        "imagereward": null,
+        "pf": 27.8776912689209,
+        "cons": 0.782559335231781,
+        "lpips": 0.6997814774513245
+      },
+      {
+        "method": "TT-FLUX (Random Search)",
+        "candidate_idx": 5,
+        "clip_score": 29.319683074951172,
+        "aesthetic_score": 6.0,
+        "imagereward": null,
+        "pf": 29.319677352905273,
+        "cons": 0.7139737606048584,
+        "lpips": 0.6909822225570679
+      },
+      {
+        "method": "TT-FLUX (Random Search)",
+        "candidate_idx": 6,
+        "clip_score": 29.96990394592285,
+        "aesthetic_score": 6.0,
+        "imagereward": null,
+        "pf": 29.969905853271484,
+        "cons": 0.7822628021240234,
+        "lpips": 0.6813684701919556
+      },
+      {
+        "method": "TT-FLUX (Random Search)",
+        "candidate_idx": 7,
+        "clip_score": 28.494396209716797,
+        "aesthetic_score": 6.0,
+        "imagereward": null,
+        "pf": 28.494380950927734,
+        "cons": 0.7587774991989136,
+        "lpips": 0.7174665331840515
+      }
+    ],
+    "best": {
+      "method": "TT-FLUX (Random Search)",
+      "candidate_idx": 6,
+      "clip_score": 29.96990394592285,
+      "aesthetic_score": 6.0,
+      "imagereward": null,
+      "pf": 29.969905853271484,
+      "cons": 0.7822628021240234,
+      "lpips": 0.6813684701919556
+    }
+  },
+  "eacps": {
+    "method": "EACPS (Qwen-Image-Edit)",
+    "clip_score": 30.340961456298828,
+    "aesthetic_score": 6.0,
+    "imagereward": null,
+    "pf": 30.340961456298828,
+    "cons": 0.7802543044090271,
+    "lpips": 0.6520553231239319
+  },
+  "comparison": {
+    "clip_score": {
+      "ttflux": 29.96990394592285,
+      "eacps": 30.340961456298828,
+      "delta": 0.37105751037597656,
+      "winner": "EACPS"
+    },
+    "aesthetic_score": {
+      "ttflux": 6.0,
+      "eacps": 6.0,
+      "delta": 0.0,
+      "winner": "TT-FLUX"
+    },
+    "pf": {
+      "ttflux": 29.969905853271484,
+      "eacps": 30.340961456298828,
+      "delta": 0.37105560302734375,
+      "winner": "EACPS"
+    },
+    "cons": {
+      "ttflux": 0.7822628021240234,
+      "eacps": 0.7802543044090271,
+      "delta": -0.002008497714996338,
+      "winner": "TT-FLUX"
+    },
+    "lpips": {
+      "ttflux": 0.6813684701919556,
+      "eacps": 0.6520553231239319,
+      "delta": 0.02931314706802368,
+      "winner": "EACPS"
+    }
+  },
+  "config": {
+    "num_samples": 8,
+    "k_global": 8,
+    "m_global": 2,
+    "k_local": 2
+  }
+}

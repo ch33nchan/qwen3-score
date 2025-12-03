@@ -1,0 +1,89 @@
+{
+  "input_image": "data/bear.png",
+  "prompt": "Add a straw hat on the bear's head, holding a watering can in its right hand and holding a small shovel in its left hand, standing in front of a small plant being watered or planted",
+  "ttflux_paper_reference": {
+    "model": "FLUX.1-dev",
+    "benchmark": "DrawBench",
+    "clip_score": 0.71,
+    "aesthetic": 5.79,
+    "imagereward": 0.97
+  },
+  "ttflux": {
+    "method": "Random Search (Best of N by CLIPScore)",
+    "model": "Qwen-Image-Edit",
+    "best_candidate_idx": 1,
+    "metrics": {
+      "clip_score": 0.3078948211669922,
+      "aesthetic": 5.886144161224365,
+      "imagereward": 0.0,
+      "lpips": 0.40818697214126587,
+      "candidate_idx": 1
+    },
+    "all_candidates": [
+      {
+        "clip_score": 0.290713996887207,
+        "aesthetic": 5.969664573669434,
+        "imagereward": 0.0,
+        "lpips": 0.4132634103298187,
+        "candidate_idx": 0
+      },
+      {
+        "clip_score": 0.3078948211669922,
+        "aesthetic": 5.886144161224365,
+        "imagereward": 0.0,
+        "lpips": 0.40818697214126587,
+        "candidate_idx": 1
+      },
+      {
+        "clip_score": 0.3014944458007813,
+        "aesthetic": 6.098231792449951,
+        "imagereward": 0.0,
+        "lpips": 0.3900464177131653,
+        "candidate_idx": 2
+      },
+      {
+        "clip_score": 0.30756732940673825,
+        "aesthetic": 5.868840217590332,
+        "imagereward": 0.0,
+        "lpips": 0.32894060015678406,
+        "candidate_idx": 3
+      }
+    ]
+  },
+  "eacps": {
+    "method": "Multi-stage Search (EACPS)",
+    "model": "Qwen-Image-Edit",
+    "metrics": {
+      "clip_score": 0.3183077621459961,
+      "aesthetic": 5.972377300262451,
+      "imagereward": 0.0,
+      "lpips": 0.4321131706237793
+    }
+  },
+  "comparison": {
+    "clip_score": {
+      "ttflux": 0.3078948211669922,
+      "eacps": 0.3183077621459961,
+      "delta": 0.010412940979003915,
+      "winner": "EACPS"
+    },
+    "aesthetic": {
+      "ttflux": 5.886144161224365,
+      "eacps": 5.972377300262451,
+      "delta": 0.08623313903808594,
+      "winner": "EACPS"
+    },
+    "lpips": {
+      "ttflux": 0.40818697214126587,
+      "eacps": 0.4321131706237793,
+      "delta": -0.023926198482513428,
+      "winner": "TT-FLUX"
+    }
+  },
+  "config": {
+    "num_samples": 4,
+    "k_global": 4,
+    "m_global": 2,
+    "k_local": 2
+  }
+}

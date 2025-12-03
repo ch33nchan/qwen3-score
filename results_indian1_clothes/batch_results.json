@@ -1,0 +1,127 @@
+[
+  {
+    "id": "indian1_001_suit",
+    "status": "success",
+    "output_dir": "results_indian1_clothes/indian1_001_suit",
+    "comparison": {
+      "clip_score": {
+        "ttflux": 0.24336891174316405,
+        "eacps": 0.24719026565551758,
+        "delta": 0.0038213539123535256,
+        "winner": "EACPS"
+      },
+      "aesthetic": {
+        "ttflux": 5.66505241394043,
+        "eacps": 5.649351119995117,
+        "delta": -0.0157012939453125,
+        "winner": "TT-FLUX"
+      },
+      "lpips": {
+        "ttflux": 0.4442092478275299,
+        "eacps": 0.4672667682170868,
+        "delta": -0.023057520389556885,
+        "winner": "TT-FLUX"
+      }
+    }
+  },
+  {
+    "id": "indian1_002_leather_jacket",
+    "status": "success",
+    "output_dir": "results_indian1_clothes/indian1_002_leather_jacket",
+    "comparison": {
+      "clip_score": {
+        "ttflux": 0.24428970336914063,
+        "eacps": 0.2595390892028809,
+        "delta": 0.015249385833740248,
+        "winner": "EACPS"
+      },
+      "aesthetic": {
+        "ttflux": 5.3535919189453125,
+        "eacps": 5.38245964050293,
+        "delta": 0.028867721557617188,
+        "winner": "EACPS"
+      },
+      "lpips": {
+        "ttflux": 0.6186115145683289,
+        "eacps": 0.5971099734306335,
+        "delta": 0.021501541137695312,
+        "winner": "EACPS"
+      }
+    }
+  },
+  {
+    "id": "indian1_003_traditional",
+    "status": "success",
+    "output_dir": "results_indian1_clothes/indian1_003_traditional",
+    "comparison": {
+      "clip_score": {
+        "ttflux": 0.25344520568847656,
+        "eacps": 0.25413726806640624,
+        "delta": 0.0006920623779296808,
+        "winner": "EACPS"
+      },
+      "aesthetic": {
+        "ttflux": 5.708507061004639,
+        "eacps": 5.672725677490234,
+        "delta": -0.0357813835144043,
+        "winner": "TT-FLUX"
+      },
+      "lpips": {
+        "ttflux": 0.40396764874458313,
+        "eacps": 0.3810791075229645,
+        "delta": 0.022888541221618652,
+        "winner": "EACPS"
+      }
+    }
+  },
+  {
+    "id": "indian1_004_sunglasses",
+    "status": "success",
+    "output_dir": "results_indian1_clothes/indian1_004_sunglasses",
+    "comparison": {
+      "clip_score": {
+        "ttflux": 0.17414859771728516,
+        "eacps": 0.17828489303588868,
+        "delta": 0.004136295318603517,
+        "winner": "EACPS"
+      },
+      "aesthetic": {
+        "ttflux": 5.484859466552734,
+        "eacps": 5.591063976287842,
+        "delta": 0.10620450973510742,
+        "winner": "EACPS"
+      },
+      "lpips": {
+        "ttflux": 0.29630473256111145,
+        "eacps": 0.219387024641037,
+        "delta": 0.07691770792007446,
+        "winner": "EACPS"
+      }
+    }
+  },
+  {
+    "id": "indian1_005_watch",
+    "status": "success",
+    "output_dir": "results_indian1_clothes/indian1_005_watch",
+    "comparison": {
+      "clip_score": {
+        "ttflux": 0.1281157398223877,
+        "eacps": 0.13040584564208985,
+        "delta": 0.002290105819702154,
+        "winner": "EACPS"
+      },
+      "aesthetic": {
+        "ttflux": 5.555084228515625,
+        "eacps": 5.491459846496582,
+        "delta": -0.06362438201904297,
+        "winner": "TT-FLUX"
+      },
+      "lpips": {
+        "ttflux": 0.328380823135376,
+        "eacps": 0.3697673976421356,
+        "delta": -0.041386574506759644,
+        "winner": "TT-FLUX"
+      }
+    }
+  }
+]

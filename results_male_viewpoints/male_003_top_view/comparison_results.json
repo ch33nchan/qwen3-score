@@ -1,0 +1,89 @@
+{
+  "input_image": "data/male.jpg",
+  "prompt": "Change the camera perspective to a top-down view, looking down at the person from above, bird's eye view angle, realistic textures, natural skin and hair, photographic quality",
+  "ttflux_paper_reference": {
+    "model": "FLUX.1-dev",
+    "benchmark": "DrawBench",
+    "clip_score": 0.71,
+    "aesthetic": 5.79,
+    "imagereward": 0.97
+  },
+  "ttflux": {
+    "method": "Random Search (Best of N by CLIPScore)",
+    "model": "Qwen-Image-Edit",
+    "best_candidate_idx": 3,
+    "metrics": {
+      "clip_score": 0.21247438430786134,
+      "aesthetic": 5.816899299621582,
+      "imagereward": 0.0,
+      "lpips": 0.6659219264984131,
+      "candidate_idx": 3
+    },
+    "all_candidates": [
+      {
+        "clip_score": 0.1911378288269043,
+        "aesthetic": 5.8759074211120605,
+        "imagereward": 0.0,
+        "lpips": 0.6755356788635254,
+        "candidate_idx": 0
+      },
+      {
+        "clip_score": 0.19093887329101564,
+        "aesthetic": 5.509037494659424,
+        "imagereward": 0.0,
+        "lpips": 0.7105759382247925,
+        "candidate_idx": 1
+      },
+      {
+        "clip_score": 0.202308349609375,
+        "aesthetic": 5.948044300079346,
+        "imagereward": 0.0,
+        "lpips": 0.5409255623817444,
+        "candidate_idx": 2
+      },
+      {
+        "clip_score": 0.21247438430786134,
+        "aesthetic": 5.816899299621582,
+        "imagereward": 0.0,
+        "lpips": 0.6659219264984131,
+        "candidate_idx": 3
+      }
+    ]
+  },
+  "eacps": {
+    "method": "Multi-stage Search (EACPS)",
+    "model": "Qwen-Image-Edit",
+    "metrics": {
+      "clip_score": 0.23956024169921875,
+      "aesthetic": 5.395208358764648,
+      "imagereward": 0.0,
+      "lpips": 0.6497912406921387
+    }
+  },
+  "comparison": {
+    "clip_score": {
+      "ttflux": 0.21247438430786134,
+      "eacps": 0.23956024169921875,
+      "delta": 0.02708585739135741,
+      "winner": "EACPS"
+    },
+    "aesthetic": {
+      "ttflux": 5.816899299621582,
+      "eacps": 5.395208358764648,
+      "delta": -0.4216909408569336,
+      "winner": "TT-FLUX"
+    },
+    "lpips": {
+      "ttflux": 0.6659219264984131,
+      "eacps": 0.6497912406921387,
+      "delta": 0.016130685806274414,
+      "winner": "EACPS"
+    }
+  },
+  "config": {
+    "num_samples": 4,
+    "k_global": 4,
+    "m_global": 2,
+    "k_local": 2
+  }
+}

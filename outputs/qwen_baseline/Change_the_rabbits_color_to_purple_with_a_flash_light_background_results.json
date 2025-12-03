@@ -1,0 +1,43 @@
+{
+  "config": {
+    "qwen": {
+      "model_id": "Qwen/Qwen-Image-Edit",
+      "device": "cuda",
+      "true_cfg_scale": 4.0,
+      "num_inference_steps": 50,
+      "negative_prompt": "",
+      "dtype": "bfloat16"
+    },
+    "clip_model": "openai/clip-vit-large-patch14"
+  },
+  "input": {
+    "image_path": "/mnt/data1/srini/qwen3-score/rabbit.jpg",
+    "prompt": "Change the rabbit's color to purple, with a flash light background."
+  },
+  "samples": [
+    {
+      "seed": 0,
+      "output_path": "/mnt/data1/srini/qwen3-score/outputs/qwen_baseline/Change_the_rabbits_color_to_purple_with_a_flash_light_background/Change_the_rabbits_color_to_purple_with_a_flash_light_background_seed0.png",
+      "clip_prompt_following": 32.04899597167969,
+      "clip_consistency": 0.8143175840377808
+    },
+    {
+      "seed": 1,
+      "output_path": "/mnt/data1/srini/qwen3-score/outputs/qwen_baseline/Change_the_rabbits_color_to_purple_with_a_flash_light_background/Change_the_rabbits_color_to_purple_with_a_flash_light_background_seed1.png",
+      "clip_prompt_following": 32.867156982421875,
+      "clip_consistency": 0.7891714572906494
+    },
+    {
+      "seed": 2,
+      "output_path": "/mnt/data1/srini/qwen3-score/outputs/qwen_baseline/Change_the_rabbits_color_to_purple_with_a_flash_light_background/Change_the_rabbits_color_to_purple_with_a_flash_light_background_seed2.png",
+      "clip_prompt_following": 31.967741012573242,
+      "clip_consistency": 0.8147741556167603
+    },
+    {
+      "seed": 3,
+      "output_path": "/mnt/data1/srini/qwen3-score/outputs/qwen_baseline/Change_the_rabbits_color_to_purple_with_a_flash_light_background/Change_the_rabbits_color_to_purple_with_a_flash_light_background_seed3.png",
+      "clip_prompt_following": 31.474760055541992,
+      "clip_consistency": 0.8111913800239563
+    }
+  ]
+}

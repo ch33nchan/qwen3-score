@@ -1,0 +1,89 @@
+{
+  "input_image": "data/bear.png",
+  "prompt": "Add a brown acoustic guitar in the bear's arms, positioned horizontally across its lap with fingers gently plucking the strings, keep the bear's posture seated on the ground, facing forward, wearing the same white T-shirt with Qwen logo",
+  "ttflux_paper_reference": {
+    "model": "FLUX.1-dev",
+    "benchmark": "DrawBench",
+    "clip_score": 0.71,
+    "aesthetic": 5.79,
+    "imagereward": 0.97
+  },
+  "ttflux": {
+    "method": "Random Search (Best of N by CLIPScore)",
+    "model": "Qwen-Image-Edit",
+    "best_candidate_idx": 0,
+    "metrics": {
+      "clip_score": 0.36853374481201173,
+      "aesthetic": 5.794522762298584,
+      "imagereward": 0.0,
+      "lpips": 0.24488565325737,
+      "candidate_idx": 0
+    },
+    "all_candidates": [
+      {
+        "clip_score": 0.36853374481201173,
+        "aesthetic": 5.794522762298584,
+        "imagereward": 0.0,
+        "lpips": 0.24488565325737,
+        "candidate_idx": 0
+      },
+      {
+        "clip_score": 0.36811100006103514,
+        "aesthetic": 5.725551605224609,
+        "imagereward": 0.0,
+        "lpips": 0.2775842547416687,
+        "candidate_idx": 1
+      },
+      {
+        "clip_score": 0.35513561248779296,
+        "aesthetic": 5.772642135620117,
+        "imagereward": 0.0,
+        "lpips": 0.25271618366241455,
+        "candidate_idx": 2
+      },
+      {
+        "clip_score": 0.36313289642333985,
+        "aesthetic": 5.774573802947998,
+        "imagereward": 0.0,
+        "lpips": 0.26451894640922546,
+        "candidate_idx": 3
+      }
+    ]
+  },
+  "eacps": {
+    "method": "Multi-stage Search (EACPS)",
+    "model": "Qwen-Image-Edit",
+    "metrics": {
+      "clip_score": 0.37207378387451173,
+      "aesthetic": 5.790279865264893,
+      "imagereward": 0.0,
+      "lpips": 0.24738173186779022
+    }
+  },
+  "comparison": {
+    "clip_score": {
+      "ttflux": 0.36853374481201173,
+      "eacps": 0.37207378387451173,
+      "delta": 0.0035400390625,
+      "winner": "EACPS"
+    },
+    "aesthetic": {
+      "ttflux": 5.794522762298584,
+      "eacps": 5.790279865264893,
+      "delta": -0.004242897033691406,
+      "winner": "TT-FLUX"
+    },
+    "lpips": {
+      "ttflux": 0.24488565325737,
+      "eacps": 0.24738173186779022,
+      "delta": -0.002496078610420227,
+      "winner": "TT-FLUX"
+    }
+  },
+  "config": {
+    "num_samples": 4,
+    "k_global": 4,
+    "m_global": 2,
+    "k_local": 2
+  }
+}

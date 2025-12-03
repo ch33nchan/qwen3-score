@@ -1,0 +1,89 @@
+{
+  "input_image": "data/indian1_resized.png",
+  "prompt": "Add a luxury silver wristwatch on the person's left wrist, keep everything else the same, RAW photo, natural skin texture, photorealistic",
+  "ttflux_paper_reference": {
+    "model": "FLUX.1-dev",
+    "benchmark": "DrawBench",
+    "clip_score": 0.71,
+    "aesthetic": 5.79,
+    "imagereward": 0.97
+  },
+  "ttflux": {
+    "method": "Random Search (Best of N by CLIPScore)",
+    "model": "Qwen-Image-Edit",
+    "best_candidate_idx": 1,
+    "metrics": {
+      "clip_score": 0.1281157398223877,
+      "aesthetic": 5.555084228515625,
+      "imagereward": 0.0,
+      "lpips": 0.328380823135376,
+      "candidate_idx": 1
+    },
+    "all_candidates": [
+      {
+        "clip_score": 0.110950288772583,
+        "aesthetic": 5.737484455108643,
+        "imagereward": 0.0,
+        "lpips": 0.30093833804130554,
+        "candidate_idx": 0
+      },
+      {
+        "clip_score": 0.1281157398223877,
+        "aesthetic": 5.555084228515625,
+        "imagereward": 0.0,
+        "lpips": 0.328380823135376,
+        "candidate_idx": 1
+      },
+      {
+        "clip_score": 0.12733040809631346,
+        "aesthetic": 5.596701622009277,
+        "imagereward": 0.0,
+        "lpips": 0.37022531032562256,
+        "candidate_idx": 2
+      },
+      {
+        "clip_score": 0.120640869140625,
+        "aesthetic": 5.728081703186035,
+        "imagereward": 0.0,
+        "lpips": 0.38159361481666565,
+        "candidate_idx": 3
+      }
+    ]
+  },
+  "eacps": {
+    "method": "Multi-stage Search (EACPS)",
+    "model": "Qwen-Image-Edit",
+    "metrics": {
+      "clip_score": 0.13040584564208985,
+      "aesthetic": 5.491459846496582,
+      "imagereward": 0.0,
+      "lpips": 0.3697673976421356
+    }
+  },
+  "comparison": {
+    "clip_score": {
+      "ttflux": 0.1281157398223877,
+      "eacps": 0.13040584564208985,
+      "delta": 0.002290105819702154,
+      "winner": "EACPS"
+    },
+    "aesthetic": {
+      "ttflux": 5.555084228515625,
+      "eacps": 5.491459846496582,
+      "delta": -0.06362438201904297,
+      "winner": "TT-FLUX"
+    },
+    "lpips": {
+      "ttflux": 0.328380823135376,
+      "eacps": 0.3697673976421356,
+      "delta": -0.041386574506759644,
+      "winner": "TT-FLUX"
+    }
+  },
+  "config": {
+    "num_samples": 4,
+    "k_global": 4,
+    "m_global": 2,
+    "k_local": 2
+  }
+}

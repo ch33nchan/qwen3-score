@@ -1,0 +1,89 @@
+{
+  "input_image": "data/male.jpg",
+  "prompt": "Show the person walking away from camera, back view with natural walking pose, maintaining realistic proportions and lighting, realistic textures, natural skin and hair, photographic quality",
+  "ttflux_paper_reference": {
+    "model": "FLUX.1-dev",
+    "benchmark": "DrawBench",
+    "clip_score": 0.71,
+    "aesthetic": 5.79,
+    "imagereward": 0.97
+  },
+  "ttflux": {
+    "method": "Random Search (Best of N by CLIPScore)",
+    "model": "Qwen-Image-Edit",
+    "best_candidate_idx": 1,
+    "metrics": {
+      "clip_score": 0.2967613029479981,
+      "aesthetic": 5.478611469268799,
+      "imagereward": 0.0,
+      "lpips": 0.7917631268501282,
+      "candidate_idx": 1
+    },
+    "all_candidates": [
+      {
+        "clip_score": 0.26261938095092774,
+        "aesthetic": 5.382271766662598,
+        "imagereward": 0.0,
+        "lpips": 0.35901913046836853,
+        "candidate_idx": 0
+      },
+      {
+        "clip_score": 0.2967613029479981,
+        "aesthetic": 5.478611469268799,
+        "imagereward": 0.0,
+        "lpips": 0.7917631268501282,
+        "candidate_idx": 1
+      },
+      {
+        "clip_score": 0.2749647521972656,
+        "aesthetic": 5.150238037109375,
+        "imagereward": 0.0,
+        "lpips": 0.2793673276901245,
+        "candidate_idx": 2
+      },
+      {
+        "clip_score": 0.260343074798584,
+        "aesthetic": 5.516985893249512,
+        "imagereward": 0.0,
+        "lpips": 0.5947058200836182,
+        "candidate_idx": 3
+      }
+    ]
+  },
+  "eacps": {
+    "method": "Multi-stage Search (EACPS)",
+    "model": "Qwen-Image-Edit",
+    "metrics": {
+      "clip_score": 0.2722336959838867,
+      "aesthetic": 5.238524436950684,
+      "imagereward": 0.0,
+      "lpips": 0.3182467520236969
+    }
+  },
+  "comparison": {
+    "clip_score": {
+      "ttflux": 0.2967613029479981,
+      "eacps": 0.2722336959838867,
+      "delta": -0.02452760696411138,
+      "winner": "TT-FLUX"
+    },
+    "aesthetic": {
+      "ttflux": 5.478611469268799,
+      "eacps": 5.238524436950684,
+      "delta": -0.24008703231811523,
+      "winner": "TT-FLUX"
+    },
+    "lpips": {
+      "ttflux": 0.7917631268501282,
+      "eacps": 0.3182467520236969,
+      "delta": 0.4735163748264313,
+      "winner": "EACPS"
+    }
+  },
+  "config": {
+    "num_samples": 4,
+    "k_global": 4,
+    "m_global": 2,
+    "k_local": 2
+  }
+}

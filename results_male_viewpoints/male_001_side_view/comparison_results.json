@@ -1,0 +1,89 @@
+{
+  "input_image": "data/male.jpg",
+  "prompt": "Rotate the person to show a side profile view, the person facing left with their profile clearly visible, natural lighting, realistic skin texture, natural hair texture, photographic quality",
+  "ttflux_paper_reference": {
+    "model": "FLUX.1-dev",
+    "benchmark": "DrawBench",
+    "clip_score": 0.71,
+    "aesthetic": 5.79,
+    "imagereward": 0.97
+  },
+  "ttflux": {
+    "method": "Random Search (Best of N by CLIPScore)",
+    "model": "Qwen-Image-Edit",
+    "best_candidate_idx": 1,
+    "metrics": {
+      "clip_score": 0.2653781509399414,
+      "aesthetic": 5.636532306671143,
+      "imagereward": 0.0,
+      "lpips": 0.45803511142730713,
+      "candidate_idx": 1
+    },
+    "all_candidates": [
+      {
+        "clip_score": 0.26533496856689454,
+        "aesthetic": 5.856008052825928,
+        "imagereward": 0.0,
+        "lpips": 0.4447264075279236,
+        "candidate_idx": 0
+      },
+      {
+        "clip_score": 0.2653781509399414,
+        "aesthetic": 5.636532306671143,
+        "imagereward": 0.0,
+        "lpips": 0.45803511142730713,
+        "candidate_idx": 1
+      },
+      {
+        "clip_score": 0.2629419898986816,
+        "aesthetic": 5.75977897644043,
+        "imagereward": 0.0,
+        "lpips": 0.4357488751411438,
+        "candidate_idx": 2
+      },
+      {
+        "clip_score": 0.241219425201416,
+        "aesthetic": 5.4560933113098145,
+        "imagereward": 0.0,
+        "lpips": 0.4684012532234192,
+        "candidate_idx": 3
+      }
+    ]
+  },
+  "eacps": {
+    "method": "Multi-stage Search (EACPS)",
+    "model": "Qwen-Image-Edit",
+    "metrics": {
+      "clip_score": 0.2904132080078125,
+      "aesthetic": 5.592714309692383,
+      "imagereward": 0.0,
+      "lpips": 0.44388413429260254
+    }
+  },
+  "comparison": {
+    "clip_score": {
+      "ttflux": 0.2653781509399414,
+      "eacps": 0.2904132080078125,
+      "delta": 0.025035057067871125,
+      "winner": "EACPS"
+    },
+    "aesthetic": {
+      "ttflux": 5.636532306671143,
+      "eacps": 5.592714309692383,
+      "delta": -0.043817996978759766,
+      "winner": "TT-FLUX"
+    },
+    "lpips": {
+      "ttflux": 0.45803511142730713,
+      "eacps": 0.44388413429260254,
+      "delta": 0.01415097713470459,
+      "winner": "EACPS"
+    }
+  },
+  "config": {
+    "num_samples": 4,
+    "k_global": 4,
+    "m_global": 2,
+    "k_local": 2
+  }
+}

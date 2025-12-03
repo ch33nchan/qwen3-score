@@ -1,0 +1,89 @@
+{
+  "input_image": "data/male.jpg",
+  "prompt": "Show the person in a right-side profile view, person facing right with side facial features and silhouette visible, natural portrait lighting, realistic skin texture, natural hair texture, photographic quality",
+  "ttflux_paper_reference": {
+    "model": "FLUX.1-dev",
+    "benchmark": "DrawBench",
+    "clip_score": 0.71,
+    "aesthetic": 5.79,
+    "imagereward": 0.97
+  },
+  "ttflux": {
+    "method": "Random Search (Best of N by CLIPScore)",
+    "model": "Qwen-Image-Edit",
+    "best_candidate_idx": 0,
+    "metrics": {
+      "clip_score": 0.27114980697631835,
+      "aesthetic": 5.4094014167785645,
+      "imagereward": 0.0,
+      "lpips": 0.472527414560318,
+      "candidate_idx": 0
+    },
+    "all_candidates": [
+      {
+        "clip_score": 0.27114980697631835,
+        "aesthetic": 5.4094014167785645,
+        "imagereward": 0.0,
+        "lpips": 0.472527414560318,
+        "candidate_idx": 0
+      },
+      {
+        "clip_score": 0.2073442268371582,
+        "aesthetic": 5.326760292053223,
+        "imagereward": 0.0,
+        "lpips": 0.6105551719665527,
+        "candidate_idx": 1
+      },
+      {
+        "clip_score": 0.2559340858459473,
+        "aesthetic": 5.710025310516357,
+        "imagereward": 0.0,
+        "lpips": 0.4637932777404785,
+        "candidate_idx": 2
+      },
+      {
+        "clip_score": 0.2605386734008789,
+        "aesthetic": 5.932474613189697,
+        "imagereward": 0.0,
+        "lpips": 0.4469977617263794,
+        "candidate_idx": 3
+      }
+    ]
+  },
+  "eacps": {
+    "method": "Multi-stage Search (EACPS)",
+    "model": "Qwen-Image-Edit",
+    "metrics": {
+      "clip_score": 0.27899330139160156,
+      "aesthetic": 5.785569190979004,
+      "imagereward": 0.0,
+      "lpips": 0.43013226985931396
+    }
+  },
+  "comparison": {
+    "clip_score": {
+      "ttflux": 0.27114980697631835,
+      "eacps": 0.27899330139160156,
+      "delta": 0.007843494415283203,
+      "winner": "EACPS"
+    },
+    "aesthetic": {
+      "ttflux": 5.4094014167785645,
+      "eacps": 5.785569190979004,
+      "delta": 0.37616777420043945,
+      "winner": "EACPS"
+    },
+    "lpips": {
+      "ttflux": 0.472527414560318,
+      "eacps": 0.43013226985931396,
+      "delta": 0.04239514470100403,
+      "winner": "EACPS"
+    }
+  },
+  "config": {
+    "num_samples": 4,
+    "k_global": 4,
+    "m_global": 2,
+    "k_local": 2
+  }
+}

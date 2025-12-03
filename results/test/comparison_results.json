@@ -1,0 +1,123 @@
+{
+  "input_image": "data/men.png",
+  "prompt": "Make him wear sunglasses",
+  "ttflux_paper_reference": {
+    "model": "FLUX.1-dev",
+    "benchmark": "DrawBench",
+    "clip_score": 0.71,
+    "aesthetic": 5.79,
+    "imagereward": 0.97
+  },
+  "ttflux": {
+    "method": "Random Search (Best of N by CLIPScore)",
+    "model": "Qwen-Image-Edit",
+    "best_candidate_idx": 5,
+    "metrics": {
+      "clip_score": 0.21392662048339844,
+      "aesthetic": 5.789511680603027,
+      "imagereward": 0.0,
+      "lpips": 0.5778443813323975,
+      "candidate_idx": 5
+    },
+    "all_candidates": [
+      {
+        "clip_score": 0.20125982284545899,
+        "aesthetic": 5.243380546569824,
+        "imagereward": 0.0,
+        "lpips": 0.5924369096755981,
+        "candidate_idx": 0
+      },
+      {
+        "clip_score": 0.19475767135620117,
+        "aesthetic": 5.259241104125977,
+        "imagereward": 0.0,
+        "lpips": 0.5447611212730408,
+        "candidate_idx": 1
+      },
+      {
+        "clip_score": 0.2113022232055664,
+        "aesthetic": 5.437546253204346,
+        "imagereward": 0.0,
+        "lpips": 0.5623047351837158,
+        "candidate_idx": 2
+      },
+      {
+        "clip_score": 0.19462064743041993,
+        "aesthetic": 5.180121421813965,
+        "imagereward": 0.0,
+        "lpips": 0.5364066958427429,
+        "candidate_idx": 3
+      },
+      {
+        "clip_score": 0.20137376785278321,
+        "aesthetic": 5.4163641929626465,
+        "imagereward": 0.0,
+        "lpips": 0.5479646325111389,
+        "candidate_idx": 4
+      },
+      {
+        "clip_score": 0.21392662048339844,
+        "aesthetic": 5.789511680603027,
+        "imagereward": 0.0,
+        "lpips": 0.5778443813323975,
+        "candidate_idx": 5
+      },
+      {
+        "clip_score": 0.20680355072021483,
+        "aesthetic": 5.509491443634033,
+        "imagereward": 0.0,
+        "lpips": 0.5399338603019714,
+        "candidate_idx": 6
+      },
+      {
+        "clip_score": 0.1988324546813965,
+        "aesthetic": 5.013804912567139,
+        "imagereward": 0.0,
+        "lpips": 0.5588563680648804,
+        "candidate_idx": 7
+      }
+    ]
+  },
+  "eacps": {
+    "method": "Multi-stage Search (EACPS)",
+    "model": "Qwen-Image-Edit",
+    "metrics": {
+      "clip_score": 0.22207637786865234,
+      "aesthetic": 5.442762851715088,
+      "imagereward": 0.0,
+      "lpips": 0.5447497963905334
+    }
+  },
+  "comparison": {
+    "clip_score": {
+      "ttflux": 0.21392662048339844,
+      "eacps": 0.22207637786865234,
+      "delta": 0.008149757385253892,
+      "winner": "EACPS"
+    },
+    "aesthetic": {
+      "ttflux": 5.789511680603027,
+      "eacps": 5.442762851715088,
+      "delta": -0.34674882888793945,
+      "winner": "TT-FLUX"
+    },
+    "imagereward": {
+      "ttflux": 0.0,
+      "eacps": 0.0,
+      "delta": 0.0,
+      "winner": "TT-FLUX"
+    },
+    "lpips": {
+      "ttflux": 0.5778443813323975,
+      "eacps": 0.5447497963905334,
+      "delta": 0.033094584941864014,
+      "winner": "EACPS"
+    }
+  },
+  "config": {
+    "num_samples": 8,
+    "k_global": 8,
+    "m_global": 2,
+    "k_local": 2
+  }
+}

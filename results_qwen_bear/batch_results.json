@@ -1,0 +1,202 @@
+[
+  {
+    "id": "bear_001_painter",
+    "status": "success",
+    "output_dir": "results_qwen_bear/bear_001_painter",
+    "comparison": {
+      "clip_score": {
+        "ttflux": 0.2916876983642578,
+        "eacps": 0.3340158462524414,
+        "delta": 0.04232814788818362,
+        "winner": "EACPS"
+      },
+      "aesthetic": {
+        "ttflux": 5.614826679229736,
+        "eacps": 5.864670753479004,
+        "delta": 0.24984407424926758,
+        "winner": "EACPS"
+      },
+      "lpips": {
+        "ttflux": 0.6073545813560486,
+        "eacps": 0.5270249843597412,
+        "delta": 0.08032959699630737,
+        "winner": "EACPS"
+      }
+    }
+  },
+  {
+    "id": "bear_002_chef",
+    "status": "success",
+    "output_dir": "results_qwen_bear/bear_002_chef",
+    "comparison": {
+      "clip_score": {
+        "ttflux": 0.3181111145019531,
+        "eacps": 0.3245650100708008,
+        "delta": 0.0064538955688476785,
+        "winner": "EACPS"
+      },
+      "aesthetic": {
+        "ttflux": 5.5936479568481445,
+        "eacps": 5.7806220054626465,
+        "delta": 0.18697404861450195,
+        "winner": "EACPS"
+      },
+      "lpips": {
+        "ttflux": 0.2319280505180359,
+        "eacps": 0.28479692339897156,
+        "delta": -0.05286887288093567,
+        "winner": "TT-FLUX"
+      }
+    }
+  },
+  {
+    "id": "bear_003_guitarist",
+    "status": "success",
+    "output_dir": "results_qwen_bear/bear_003_guitarist",
+    "comparison": {
+      "clip_score": {
+        "ttflux": 0.36853374481201173,
+        "eacps": 0.37207378387451173,
+        "delta": 0.0035400390625,
+        "winner": "EACPS"
+      },
+      "aesthetic": {
+        "ttflux": 5.794522762298584,
+        "eacps": 5.790279865264893,
+        "delta": -0.004242897033691406,
+        "winner": "TT-FLUX"
+      },
+      "lpips": {
+        "ttflux": 0.24488565325737,
+        "eacps": 0.24738173186779022,
+        "delta": -0.002496078610420227,
+        "winner": "TT-FLUX"
+      }
+    }
+  },
+  {
+    "id": "bear_004_magician",
+    "status": "success",
+    "output_dir": "results_qwen_bear/bear_004_magician",
+    "comparison": {
+      "clip_score": {
+        "ttflux": 0.34014171600341797,
+        "eacps": 0.34409481048583984,
+        "delta": 0.0039530944824218706,
+        "winner": "EACPS"
+      },
+      "aesthetic": {
+        "ttflux": 5.997690677642822,
+        "eacps": 6.334334373474121,
+        "delta": 0.33664369583129883,
+        "winner": "EACPS"
+      },
+      "lpips": {
+        "ttflux": 0.46116024255752563,
+        "eacps": 0.45683521032333374,
+        "delta": 0.0043250322341918945,
+        "winner": "EACPS"
+      }
+    }
+  },
+  {
+    "id": "bear_005_basketball",
+    "status": "success",
+    "output_dir": "results_qwen_bear/bear_005_basketball",
+    "comparison": {
+      "clip_score": {
+        "ttflux": 0.34515483856201173,
+        "eacps": 0.3150968170166016,
+        "delta": -0.030058021545410152,
+        "winner": "TT-FLUX"
+      },
+      "aesthetic": {
+        "ttflux": 5.773146629333496,
+        "eacps": 5.447497367858887,
+        "delta": -0.3256492614746094,
+        "winner": "TT-FLUX"
+      },
+      "lpips": {
+        "ttflux": 0.3299901783466339,
+        "eacps": 0.2591507136821747,
+        "delta": 0.07083946466445923,
+        "winner": "EACPS"
+      }
+    }
+  },
+  {
+    "id": "bear_006_gardener",
+    "status": "success",
+    "output_dir": "results_qwen_bear/bear_006_gardener",
+    "comparison": {
+      "clip_score": {
+        "ttflux": 0.3078948211669922,
+        "eacps": 0.3183077621459961,
+        "delta": 0.010412940979003915,
+        "winner": "EACPS"
+      },
+      "aesthetic": {
+        "ttflux": 5.886144161224365,
+        "eacps": 5.972377300262451,
+        "delta": 0.08623313903808594,
+        "winner": "EACPS"
+      },
+      "lpips": {
+        "ttflux": 0.40818697214126587,
+        "eacps": 0.4321131706237793,
+        "delta": -0.023926198482513428,
+        "winner": "TT-FLUX"
+      }
+    }
+  },
+  {
+    "id": "bear_007_astronaut",
+    "status": "success",
+    "output_dir": "results_qwen_bear/bear_007_astronaut",
+    "comparison": {
+      "clip_score": {
+        "ttflux": 0.280557804107666,
+        "eacps": 0.2905750846862793,
+        "delta": 0.010017280578613286,
+        "winner": "EACPS"
+      },
+      "aesthetic": {
+        "ttflux": 6.136322975158691,
+        "eacps": 6.207335472106934,
+        "delta": 0.07101249694824219,
+        "winner": "EACPS"
+      },
+      "lpips": {
+        "ttflux": 0.6349928379058838,
+        "eacps": 0.29832586646080017,
+        "delta": 0.3366669714450836,
+        "winner": "EACPS"
+      }
+    }
+  },
+  {
+    "id": "bear_008_dancer",
+    "status": "success",
+    "output_dir": "results_qwen_bear/bear_008_dancer",
+    "comparison": {
+      "clip_score": {
+        "ttflux": 0.36191333770751954,
+        "eacps": 0.3458097457885742,
+        "delta": -0.016103591918945337,
+        "winner": "TT-FLUX"
+      },
+      "aesthetic": {
+        "ttflux": 6.020761489868164,
+        "eacps": 6.121417045593262,
+        "delta": 0.10065555572509766,
+        "winner": "EACPS"
+      },
+      "lpips": {
+        "ttflux": 0.45874637365341187,
+        "eacps": 0.39328885078430176,
+        "delta": 0.06545752286911011,
+        "winner": "EACPS"
+      }
+    }
+  }
+]

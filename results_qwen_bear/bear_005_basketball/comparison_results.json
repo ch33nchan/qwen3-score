@@ -1,0 +1,89 @@
+{
+  "input_image": "data/bear.png",
+  "prompt": "This bear is wearing sportswear, holding a basketball and bending one leg",
+  "ttflux_paper_reference": {
+    "model": "FLUX.1-dev",
+    "benchmark": "DrawBench",
+    "clip_score": 0.71,
+    "aesthetic": 5.79,
+    "imagereward": 0.97
+  },
+  "ttflux": {
+    "method": "Random Search (Best of N by CLIPScore)",
+    "model": "Qwen-Image-Edit",
+    "best_candidate_idx": 3,
+    "metrics": {
+      "clip_score": 0.34515483856201173,
+      "aesthetic": 5.773146629333496,
+      "imagereward": 0.0,
+      "lpips": 0.3299901783466339,
+      "candidate_idx": 3
+    },
+    "all_candidates": [
+      {
+        "clip_score": 0.3099680519104004,
+        "aesthetic": 5.75473165512085,
+        "imagereward": 0.0,
+        "lpips": 0.2726275622844696,
+        "candidate_idx": 0
+      },
+      {
+        "clip_score": 0.3056944274902344,
+        "aesthetic": 5.4487714767456055,
+        "imagereward": 0.0,
+        "lpips": 0.2677280604839325,
+        "candidate_idx": 1
+      },
+      {
+        "clip_score": 0.3199258232116699,
+        "aesthetic": 5.784183979034424,
+        "imagereward": 0.0,
+        "lpips": 0.265949010848999,
+        "candidate_idx": 2
+      },
+      {
+        "clip_score": 0.34515483856201173,
+        "aesthetic": 5.773146629333496,
+        "imagereward": 0.0,
+        "lpips": 0.3299901783466339,
+        "candidate_idx": 3
+      }
+    ]
+  },
+  "eacps": {
+    "method": "Multi-stage Search (EACPS)",
+    "model": "Qwen-Image-Edit",
+    "metrics": {
+      "clip_score": 0.3150968170166016,
+      "aesthetic": 5.447497367858887,
+      "imagereward": 0.0,
+      "lpips": 0.2591507136821747
+    }
+  },
+  "comparison": {
+    "clip_score": {
+      "ttflux": 0.34515483856201173,
+      "eacps": 0.3150968170166016,
+      "delta": -0.030058021545410152,
+      "winner": "TT-FLUX"
+    },
+    "aesthetic": {
+      "ttflux": 5.773146629333496,
+      "eacps": 5.447497367858887,
+      "delta": -0.3256492614746094,
+      "winner": "TT-FLUX"
+    },
+    "lpips": {
+      "ttflux": 0.3299901783466339,
+      "eacps": 0.2591507136821747,
+      "delta": 0.07083946466445923,
+      "winner": "EACPS"
+    }
+  },
+  "config": {
+    "num_samples": 4,
+    "k_global": 4,
+    "m_global": 2,
+    "k_local": 2
+  }
+}

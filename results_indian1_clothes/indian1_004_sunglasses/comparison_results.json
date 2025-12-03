@@ -1,0 +1,89 @@
+{
+  "input_image": "data/indian1_resized.png",
+  "prompt": "Add stylish aviator sunglasses to the person's face, keep everything else the same, RAW photo, natural skin texture, photorealistic",
+  "ttflux_paper_reference": {
+    "model": "FLUX.1-dev",
+    "benchmark": "DrawBench",
+    "clip_score": 0.71,
+    "aesthetic": 5.79,
+    "imagereward": 0.97
+  },
+  "ttflux": {
+    "method": "Random Search (Best of N by CLIPScore)",
+    "model": "Qwen-Image-Edit",
+    "best_candidate_idx": 1,
+    "metrics": {
+      "clip_score": 0.17414859771728516,
+      "aesthetic": 5.484859466552734,
+      "imagereward": 0.0,
+      "lpips": 0.29630473256111145,
+      "candidate_idx": 1
+    },
+    "all_candidates": [
+      {
+        "clip_score": 0.16389101028442382,
+        "aesthetic": 5.519963264465332,
+        "imagereward": 0.0,
+        "lpips": 0.29417312145233154,
+        "candidate_idx": 0
+      },
+      {
+        "clip_score": 0.17414859771728516,
+        "aesthetic": 5.484859466552734,
+        "imagereward": 0.0,
+        "lpips": 0.29630473256111145,
+        "candidate_idx": 1
+      },
+      {
+        "clip_score": 0.17267528533935547,
+        "aesthetic": 5.530211448669434,
+        "imagereward": 0.0,
+        "lpips": 0.3622579276561737,
+        "candidate_idx": 2
+      },
+      {
+        "clip_score": 0.16566911697387696,
+        "aesthetic": 5.514633655548096,
+        "imagereward": 0.0,
+        "lpips": 0.3600212335586548,
+        "candidate_idx": 3
+      }
+    ]
+  },
+  "eacps": {
+    "method": "Multi-stage Search (EACPS)",
+    "model": "Qwen-Image-Edit",
+    "metrics": {
+      "clip_score": 0.17828489303588868,
+      "aesthetic": 5.591063976287842,
+      "imagereward": 0.0,
+      "lpips": 0.219387024641037
+    }
+  },
+  "comparison": {
+    "clip_score": {
+      "ttflux": 0.17414859771728516,
+      "eacps": 0.17828489303588868,
+      "delta": 0.004136295318603517,
+      "winner": "EACPS"
+    },
+    "aesthetic": {
+      "ttflux": 5.484859466552734,
+      "eacps": 5.591063976287842,
+      "delta": 0.10620450973510742,
+      "winner": "EACPS"
+    },
+    "lpips": {
+      "ttflux": 0.29630473256111145,
+      "eacps": 0.219387024641037,
+      "delta": 0.07691770792007446,
+      "winner": "EACPS"
+    }
+  },
+  "config": {
+    "num_samples": 4,
+    "k_global": 4,
+    "m_global": 2,
+    "k_local": 2
+  }
+}

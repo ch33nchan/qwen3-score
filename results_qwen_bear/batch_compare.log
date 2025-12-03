@@ -1,0 +1,67 @@
+======================================================================
+BATCH COMPARISON: TT-FLUX vs EACPS
+======================================================================
+Prompts: 8
+Devices: ['cuda:0', 'cuda:3']
+Workers: 2
+Output: results_qwen_bear
+
+
+[1/8] bear_001_painter on cuda:0
+  Image: bear.png
+  Prompt: Add a colorful art board and paintbrush in the bea...
+  Result: EACPS wins 3/3 metrics
+
+[2/8] bear_002_chef on cuda:3
+  Image: bear.png
+  Prompt: Add a silver spatula in the bear's right hand, pla...
+  Result: EACPS wins 2/3 metrics
+
+[3/8] bear_003_guitarist on cuda:0
+  Image: bear.png
+  Prompt: Add a brown acoustic guitar in the bear's arms, po...
+  Result: EACPS wins 1/3 metrics
+
+[4/8] bear_004_magician on cuda:3
+  Image: bear.png
+  Prompt: This bear is wearing a tuxedo, a magician's hat an...
+  Result: EACPS wins 3/3 metrics
+
+[5/8] bear_005_basketball on cuda:0
+  Image: bear.png
+  Prompt: This bear is wearing sportswear, holding a basketb...
+  Result: EACPS wins 1/3 metrics
+
+[6/8] bear_006_gardener on cuda:3
+  Image: bear.png
+  Prompt: Add a straw hat on the bear's head, holding a wate...
+  Result: EACPS wins 2/3 metrics
+
+[7/8] bear_007_astronaut on cuda:0
+  Image: bear.png
+  Prompt: This bear is wearing a spacesuit and pointing towa...
+  Result: EACPS wins 3/3 metrics
+
+[8/8] bear_008_dancer on cuda:3
+  Image: bear.png
+  Prompt: This bear is wearing an elaborate dance dress with...
+  Result: EACPS wins 2/3 metrics
+
+======================================================================
+SUMMARY
+======================================================================
+Successful: 8/8
+Failed: 0
+
+Aggregate wins across all prompts:
+  CLIPScore:  EACPS 6 / TT-FLUX 2
+  Aesthetic:  EACPS 6 / TT-FLUX 2
+  LPIPS:      EACPS 5 / TT-FLUX 3
+
+Overall: EACPS 17 / TT-FLUX 7
+
+Results saved to: results_qwen_bear/batch_results.json
+Individual results in: results_qwen_bear/
+
+Generating Label Studio tasks...
+Label Studio tasks: results_qwen_bear/labelstudio_export/tasks.json

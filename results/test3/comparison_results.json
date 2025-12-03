@@ -1,0 +1,89 @@
+{
+  "input_image": "data/bro.png",
+  "prompt": "A zebra underneath the broccoli realistic like under a tree but instead of a tree we have a broccoli",
+  "ttflux_paper_reference": {
+    "model": "FLUX.1-dev",
+    "benchmark": "DrawBench",
+    "clip_score": 0.71,
+    "aesthetic": 5.79,
+    "imagereward": 0.97
+  },
+  "ttflux": {
+    "method": "Random Search (Best of N by CLIPScore)",
+    "model": "Qwen-Image-Edit",
+    "best_candidate_idx": 0,
+    "metrics": {
+      "clip_score": 0.400184326171875,
+      "aesthetic": 6.005552768707275,
+      "imagereward": 0.0,
+      "lpips": 0.5799446702003479,
+      "candidate_idx": 0
+    },
+    "all_candidates": [
+      {
+        "clip_score": 0.400184326171875,
+        "aesthetic": 6.005552768707275,
+        "imagereward": 0.0,
+        "lpips": 0.5799446702003479,
+        "candidate_idx": 0
+      },
+      {
+        "clip_score": 0.3913597106933594,
+        "aesthetic": 5.950430393218994,
+        "imagereward": 0.0,
+        "lpips": 0.6261852383613586,
+        "candidate_idx": 1
+      },
+      {
+        "clip_score": 0.3829812240600586,
+        "aesthetic": 6.007330417633057,
+        "imagereward": 0.0,
+        "lpips": 0.657166600227356,
+        "candidate_idx": 2
+      },
+      {
+        "clip_score": 0.37828601837158204,
+        "aesthetic": 5.9847612380981445,
+        "imagereward": 0.0,
+        "lpips": 0.5980887413024902,
+        "candidate_idx": 3
+      }
+    ]
+  },
+  "eacps": {
+    "method": "Multi-stage Search (EACPS)",
+    "model": "Qwen-Image-Edit",
+    "metrics": {
+      "clip_score": 0.3985784912109375,
+      "aesthetic": 5.596180438995361,
+      "imagereward": 0.0,
+      "lpips": 0.6157886981964111
+    }
+  },
+  "comparison": {
+    "clip_score": {
+      "ttflux": 0.400184326171875,
+      "eacps": 0.3985784912109375,
+      "delta": -0.001605834960937469,
+      "winner": "TT-FLUX"
+    },
+    "aesthetic": {
+      "ttflux": 6.005552768707275,
+      "eacps": 5.596180438995361,
+      "delta": -0.40937232971191406,
+      "winner": "TT-FLUX"
+    },
+    "lpips": {
+      "ttflux": 0.5799446702003479,
+      "eacps": 0.6157886981964111,
+      "delta": -0.03584402799606323,
+      "winner": "TT-FLUX"
+    }
+  },
+  "config": {
+    "num_samples": 4,
+    "k_global": 4,
+    "m_global": 2,
+    "k_local": 2
+  }
+}

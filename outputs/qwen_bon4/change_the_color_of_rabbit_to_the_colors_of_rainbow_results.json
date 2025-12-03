@@ -1,0 +1,43 @@
+{
+  "config": {
+    "qwen": {
+      "model_id": "Qwen/Qwen-Image-Edit",
+      "device": "cuda",
+      "true_cfg_scale": 4.0,
+      "num_inference_steps": 50,
+      "negative_prompt": "",
+      "dtype": "bfloat16"
+    },
+    "clip_model": "openai/clip-vit-large-patch14"
+  },
+  "input": {
+    "image_path": "/mnt/data1/srini/qwen3-score/rabbit.jpg",
+    "prompt": "change the color of rabbit to the colors of rainbow"
+  },
+  "samples": [
+    {
+      "seed": 0,
+      "output_path": "/mnt/data1/srini/qwen3-score/outputs/qwen_bon4/change_the_color_of_rabbit_to_the_colors_of_rainbow/change_the_color_of_rabbit_to_the_colors_of_rainbow_seed0.png",
+      "clip_prompt_following": 29.796146392822266,
+      "clip_consistency": 0.8324576020240784
+    },
+    {
+      "seed": 1,
+      "output_path": "/mnt/data1/srini/qwen3-score/outputs/qwen_bon4/change_the_color_of_rabbit_to_the_colors_of_rainbow/change_the_color_of_rabbit_to_the_colors_of_rainbow_seed1.png",
+      "clip_prompt_following": 29.499996185302734,
+      "clip_consistency": 0.8345310688018799
+    },
+    {
+      "seed": 2,
+      "output_path": "/mnt/data1/srini/qwen3-score/outputs/qwen_bon4/change_the_color_of_rabbit_to_the_colors_of_rainbow/change_the_color_of_rabbit_to_the_colors_of_rainbow_seed2.png",
+      "clip_prompt_following": 29.631698608398438,
+      "clip_consistency": 0.842936635017395
+    },
+    {
+      "seed": 3,
+      "output_path": "/mnt/data1/srini/qwen3-score/outputs/qwen_bon4/change_the_color_of_rabbit_to_the_colors_of_rainbow/change_the_color_of_rabbit_to_the_colors_of_rainbow_seed3.png",
+      "clip_prompt_following": 29.24271583557129,
+      "clip_consistency": 0.8362082242965698
+    }
+  ]
+}

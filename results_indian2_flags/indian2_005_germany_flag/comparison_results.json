@@ -1,0 +1,89 @@
+{
+  "input_image": "data/indian2_resized.png",
+  "prompt": "Replace the flag with the Germany flag, black red and gold horizontal stripes, keep the person and pose exactly the same, RAW photo, natural skin texture, photorealistic",
+  "ttflux_paper_reference": {
+    "model": "FLUX.1-dev",
+    "benchmark": "DrawBench",
+    "clip_score": 0.71,
+    "aesthetic": 5.79,
+    "imagereward": 0.97
+  },
+  "ttflux": {
+    "method": "Random Search (Best of N by CLIPScore)",
+    "model": "Qwen-Image-Edit",
+    "best_candidate_idx": 1,
+    "metrics": {
+      "clip_score": 0.292973575592041,
+      "aesthetic": 5.274590492248535,
+      "imagereward": 0.0,
+      "lpips": 0.49830472469329834,
+      "candidate_idx": 1
+    },
+    "all_candidates": [
+      {
+        "clip_score": 0.28785234451293945,
+        "aesthetic": 5.221383571624756,
+        "imagereward": 0.0,
+        "lpips": 0.49665603041648865,
+        "candidate_idx": 0
+      },
+      {
+        "clip_score": 0.292973575592041,
+        "aesthetic": 5.274590492248535,
+        "imagereward": 0.0,
+        "lpips": 0.49830472469329834,
+        "candidate_idx": 1
+      },
+      {
+        "clip_score": 0.2926597595214844,
+        "aesthetic": 5.278458118438721,
+        "imagereward": 0.0,
+        "lpips": 0.45842647552490234,
+        "candidate_idx": 2
+      },
+      {
+        "clip_score": 0.2927358436584473,
+        "aesthetic": 5.108083248138428,
+        "imagereward": 0.0,
+        "lpips": 0.43395209312438965,
+        "candidate_idx": 3
+      }
+    ]
+  },
+  "eacps": {
+    "method": "Multi-stage Search (EACPS)",
+    "model": "Qwen-Image-Edit",
+    "metrics": {
+      "clip_score": 0.30278730392456055,
+      "aesthetic": 5.202639579772949,
+      "imagereward": 0.0,
+      "lpips": 0.4508540630340576
+    }
+  },
+  "comparison": {
+    "clip_score": {
+      "ttflux": 0.292973575592041,
+      "eacps": 0.30278730392456055,
+      "delta": 0.009813728332519533,
+      "winner": "EACPS"
+    },
+    "aesthetic": {
+      "ttflux": 5.274590492248535,
+      "eacps": 5.202639579772949,
+      "delta": -0.07195091247558594,
+      "winner": "TT-FLUX"
+    },
+    "lpips": {
+      "ttflux": 0.49830472469329834,
+      "eacps": 0.4508540630340576,
+      "delta": 0.04745066165924072,
+      "winner": "EACPS"
+    }
+  },
+  "config": {
+    "num_samples": 4,
+    "k_global": 4,
+    "m_global": 2,
+    "k_local": 2
+  }
+}

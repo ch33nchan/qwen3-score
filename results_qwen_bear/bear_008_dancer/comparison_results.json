@@ -1,0 +1,89 @@
+{
+  "input_image": "data/bear.png",
+  "prompt": "This bear is wearing an elaborate dance dress with arms spread open performing an elegant dance pose",
+  "ttflux_paper_reference": {
+    "model": "FLUX.1-dev",
+    "benchmark": "DrawBench",
+    "clip_score": 0.71,
+    "aesthetic": 5.79,
+    "imagereward": 0.97
+  },
+  "ttflux": {
+    "method": "Random Search (Best of N by CLIPScore)",
+    "model": "Qwen-Image-Edit",
+    "best_candidate_idx": 1,
+    "metrics": {
+      "clip_score": 0.36191333770751954,
+      "aesthetic": 6.020761489868164,
+      "imagereward": 0.0,
+      "lpips": 0.45874637365341187,
+      "candidate_idx": 1
+    },
+    "all_candidates": [
+      {
+        "clip_score": 0.33666210174560546,
+        "aesthetic": 6.006946563720703,
+        "imagereward": 0.0,
+        "lpips": 0.4000062346458435,
+        "candidate_idx": 0
+      },
+      {
+        "clip_score": 0.36191333770751954,
+        "aesthetic": 6.020761489868164,
+        "imagereward": 0.0,
+        "lpips": 0.45874637365341187,
+        "candidate_idx": 1
+      },
+      {
+        "clip_score": 0.3435318756103516,
+        "aesthetic": 6.0259785652160645,
+        "imagereward": 0.0,
+        "lpips": 0.42888307571411133,
+        "candidate_idx": 2
+      },
+      {
+        "clip_score": 0.3316043853759766,
+        "aesthetic": 6.1874823570251465,
+        "imagereward": 0.0,
+        "lpips": 0.3787105977535248,
+        "candidate_idx": 3
+      }
+    ]
+  },
+  "eacps": {
+    "method": "Multi-stage Search (EACPS)",
+    "model": "Qwen-Image-Edit",
+    "metrics": {
+      "clip_score": 0.3458097457885742,
+      "aesthetic": 6.121417045593262,
+      "imagereward": 0.0,
+      "lpips": 0.39328885078430176
+    }
+  },
+  "comparison": {
+    "clip_score": {
+      "ttflux": 0.36191333770751954,
+      "eacps": 0.3458097457885742,
+      "delta": -0.016103591918945337,
+      "winner": "TT-FLUX"
+    },
+    "aesthetic": {
+      "ttflux": 6.020761489868164,
+      "eacps": 6.121417045593262,
+      "delta": 0.10065555572509766,
+      "winner": "EACPS"
+    },
+    "lpips": {
+      "ttflux": 0.45874637365341187,
+      "eacps": 0.39328885078430176,
+      "delta": 0.06545752286911011,
+      "winner": "EACPS"
+    }
+  },
+  "config": {
+    "num_samples": 4,
+    "k_global": 4,
+    "m_global": 2,
+    "k_local": 2
+  }
+}

@@ -1,0 +1,89 @@
+{
+  "input_image": "data/bear.png",
+  "prompt": "This bear is wearing a tuxedo, a magician's hat and holding a magic wand, performing a magic trick gesture",
+  "ttflux_paper_reference": {
+    "model": "FLUX.1-dev",
+    "benchmark": "DrawBench",
+    "clip_score": 0.71,
+    "aesthetic": 5.79,
+    "imagereward": 0.97
+  },
+  "ttflux": {
+    "method": "Random Search (Best of N by CLIPScore)",
+    "model": "Qwen-Image-Edit",
+    "best_candidate_idx": 0,
+    "metrics": {
+      "clip_score": 0.34014171600341797,
+      "aesthetic": 5.997690677642822,
+      "imagereward": 0.0,
+      "lpips": 0.46116024255752563,
+      "candidate_idx": 0
+    },
+    "all_candidates": [
+      {
+        "clip_score": 0.34014171600341797,
+        "aesthetic": 5.997690677642822,
+        "imagereward": 0.0,
+        "lpips": 0.46116024255752563,
+        "candidate_idx": 0
+      },
+      {
+        "clip_score": 0.3327924346923828,
+        "aesthetic": 6.162053108215332,
+        "imagereward": 0.0,
+        "lpips": 0.35383638739585876,
+        "candidate_idx": 1
+      },
+      {
+        "clip_score": 0.3377342987060547,
+        "aesthetic": 6.354822158813477,
+        "imagereward": 0.0,
+        "lpips": 0.657909095287323,
+        "candidate_idx": 2
+      },
+      {
+        "clip_score": 0.3312148284912109,
+        "aesthetic": 6.094082832336426,
+        "imagereward": 0.0,
+        "lpips": 0.3578309118747711,
+        "candidate_idx": 3
+      }
+    ]
+  },
+  "eacps": {
+    "method": "Multi-stage Search (EACPS)",
+    "model": "Qwen-Image-Edit",
+    "metrics": {
+      "clip_score": 0.34409481048583984,
+      "aesthetic": 6.334334373474121,
+      "imagereward": 0.0,
+      "lpips": 0.45683521032333374
+    }
+  },
+  "comparison": {
+    "clip_score": {
+      "ttflux": 0.34014171600341797,
+      "eacps": 0.34409481048583984,
+      "delta": 0.0039530944824218706,
+      "winner": "EACPS"
+    },
+    "aesthetic": {
+      "ttflux": 5.997690677642822,
+      "eacps": 6.334334373474121,
+      "delta": 0.33664369583129883,
+      "winner": "EACPS"
+    },
+    "lpips": {
+      "ttflux": 0.46116024255752563,
+      "eacps": 0.45683521032333374,
+      "delta": 0.0043250322341918945,
+      "winner": "EACPS"
+    }
+  },
+  "config": {
+    "num_samples": 4,
+    "k_global": 4,
+    "m_global": 2,
+    "k_local": 2
+  }
+}

@@ -1,0 +1,89 @@
+{
+  "input_image": "data/indian2_resized.png",
+  "prompt": "Replace the flag with the United States of America flag, stars and stripes, keep the person and pose exactly the same, RAW photo, natural skin texture, photorealistic",
+  "ttflux_paper_reference": {
+    "model": "FLUX.1-dev",
+    "benchmark": "DrawBench",
+    "clip_score": 0.71,
+    "aesthetic": 5.79,
+    "imagereward": 0.97
+  },
+  "ttflux": {
+    "method": "Random Search (Best of N by CLIPScore)",
+    "model": "Qwen-Image-Edit",
+    "best_candidate_idx": 1,
+    "metrics": {
+      "clip_score": 0.2783109855651855,
+      "aesthetic": 5.473038673400879,
+      "imagereward": 0.0,
+      "lpips": 0.5178675055503845,
+      "candidate_idx": 1
+    },
+    "all_candidates": [
+      {
+        "clip_score": 0.2678190231323242,
+        "aesthetic": 5.509616851806641,
+        "imagereward": 0.0,
+        "lpips": 0.5363298654556274,
+        "candidate_idx": 0
+      },
+      {
+        "clip_score": 0.2783109855651855,
+        "aesthetic": 5.473038673400879,
+        "imagereward": 0.0,
+        "lpips": 0.5178675055503845,
+        "candidate_idx": 1
+      },
+      {
+        "clip_score": 0.27345895767211914,
+        "aesthetic": 5.611008167266846,
+        "imagereward": 0.0,
+        "lpips": 0.5193896293640137,
+        "candidate_idx": 2
+      },
+      {
+        "clip_score": 0.2668653106689453,
+        "aesthetic": 5.483480453491211,
+        "imagereward": 0.0,
+        "lpips": 0.4781527519226074,
+        "candidate_idx": 3
+      }
+    ]
+  },
+  "eacps": {
+    "method": "Multi-stage Search (EACPS)",
+    "model": "Qwen-Image-Edit",
+    "metrics": {
+      "clip_score": 0.2797426795959473,
+      "aesthetic": 5.626672267913818,
+      "imagereward": 0.0,
+      "lpips": 0.5262941718101501
+    }
+  },
+  "comparison": {
+    "clip_score": {
+      "ttflux": 0.2783109855651855,
+      "eacps": 0.2797426795959473,
+      "delta": 0.0014316940307617654,
+      "winner": "EACPS"
+    },
+    "aesthetic": {
+      "ttflux": 5.473038673400879,
+      "eacps": 5.626672267913818,
+      "delta": 0.15363359451293945,
+      "winner": "EACPS"
+    },
+    "lpips": {
+      "ttflux": 0.5178675055503845,
+      "eacps": 0.5262941718101501,
+      "delta": -0.008426666259765625,
+      "winner": "TT-FLUX"
+    }
+  },
+  "config": {
+    "num_samples": 4,
+    "k_global": 4,
+    "m_global": 2,
+    "k_local": 2
+  }
+}

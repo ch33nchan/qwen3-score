@@ -1,0 +1,89 @@
+{
+  "input_image": "data/indian2_resized.png",
+  "prompt": "Replace the flag with the Japan flag, white background with red circle, keep the person and pose exactly the same, RAW photo, natural skin texture, photorealistic",
+  "ttflux_paper_reference": {
+    "model": "FLUX.1-dev",
+    "benchmark": "DrawBench",
+    "clip_score": 0.71,
+    "aesthetic": 5.79,
+    "imagereward": 0.97
+  },
+  "ttflux": {
+    "method": "Random Search (Best of N by CLIPScore)",
+    "model": "Qwen-Image-Edit",
+    "best_candidate_idx": 2,
+    "metrics": {
+      "clip_score": 0.30009376525878906,
+      "aesthetic": 5.291597366333008,
+      "imagereward": 0.0,
+      "lpips": 0.41646671295166016,
+      "candidate_idx": 2
+    },
+    "all_candidates": [
+      {
+        "clip_score": 0.27409967422485354,
+        "aesthetic": 5.146953582763672,
+        "imagereward": 0.0,
+        "lpips": 0.48693597316741943,
+        "candidate_idx": 0
+      },
+      {
+        "clip_score": 0.294676570892334,
+        "aesthetic": 5.483496189117432,
+        "imagereward": 0.0,
+        "lpips": 0.4607665538787842,
+        "candidate_idx": 1
+      },
+      {
+        "clip_score": 0.30009376525878906,
+        "aesthetic": 5.291597366333008,
+        "imagereward": 0.0,
+        "lpips": 0.41646671295166016,
+        "candidate_idx": 2
+      },
+      {
+        "clip_score": 0.2891012954711914,
+        "aesthetic": 5.247959136962891,
+        "imagereward": 0.0,
+        "lpips": 0.43522852659225464,
+        "candidate_idx": 3
+      }
+    ]
+  },
+  "eacps": {
+    "method": "Multi-stage Search (EACPS)",
+    "model": "Qwen-Image-Edit",
+    "metrics": {
+      "clip_score": 0.30502752304077146,
+      "aesthetic": 5.4227294921875,
+      "imagereward": 0.0,
+      "lpips": 0.467450886964798
+    }
+  },
+  "comparison": {
+    "clip_score": {
+      "ttflux": 0.30009376525878906,
+      "eacps": 0.30502752304077146,
+      "delta": 0.004933757781982406,
+      "winner": "EACPS"
+    },
+    "aesthetic": {
+      "ttflux": 5.291597366333008,
+      "eacps": 5.4227294921875,
+      "delta": 0.1311321258544922,
+      "winner": "EACPS"
+    },
+    "lpips": {
+      "ttflux": 0.41646671295166016,
+      "eacps": 0.467450886964798,
+      "delta": -0.05098417401313782,
+      "winner": "TT-FLUX"
+    }
+  },
+  "config": {
+    "num_samples": 4,
+    "k_global": 4,
+    "m_global": 2,
+    "k_local": 2
+  }
+}

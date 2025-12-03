@@ -1,0 +1,127 @@
+[
+  {
+    "id": "male_001_side_view",
+    "status": "success",
+    "output_dir": "results_male_viewpoints/male_001_side_view",
+    "comparison": {
+      "clip_score": {
+        "ttflux": 0.2653781509399414,
+        "eacps": 0.2904132080078125,
+        "delta": 0.025035057067871125,
+        "winner": "EACPS"
+      },
+      "aesthetic": {
+        "ttflux": 5.636532306671143,
+        "eacps": 5.592714309692383,
+        "delta": -0.043817996978759766,
+        "winner": "TT-FLUX"
+      },
+      "lpips": {
+        "ttflux": 0.45803511142730713,
+        "eacps": 0.44388413429260254,
+        "delta": 0.01415097713470459,
+        "winner": "EACPS"
+      }
+    }
+  },
+  {
+    "id": "male_002_behind_view",
+    "status": "success",
+    "output_dir": "results_male_viewpoints/male_002_behind_view",
+    "comparison": {
+      "clip_score": {
+        "ttflux": 0.29806783676147464,
+        "eacps": 0.2836248207092285,
+        "delta": -0.014443016052246127,
+        "winner": "TT-FLUX"
+      },
+      "aesthetic": {
+        "ttflux": 4.938917636871338,
+        "eacps": 4.907474040985107,
+        "delta": -0.03144359588623047,
+        "winner": "TT-FLUX"
+      },
+      "lpips": {
+        "ttflux": 0.276261568069458,
+        "eacps": 0.2818700671195984,
+        "delta": -0.005608499050140381,
+        "winner": "TT-FLUX"
+      }
+    }
+  },
+  {
+    "id": "male_003_top_view",
+    "status": "success",
+    "output_dir": "results_male_viewpoints/male_003_top_view",
+    "comparison": {
+      "clip_score": {
+        "ttflux": 0.21247438430786134,
+        "eacps": 0.23956024169921875,
+        "delta": 0.02708585739135741,
+        "winner": "EACPS"
+      },
+      "aesthetic": {
+        "ttflux": 5.816899299621582,
+        "eacps": 5.395208358764648,
+        "delta": -0.4216909408569336,
+        "winner": "TT-FLUX"
+      },
+      "lpips": {
+        "ttflux": 0.6659219264984131,
+        "eacps": 0.6497912406921387,
+        "delta": 0.016130685806274414,
+        "winner": "EACPS"
+      }
+    }
+  },
+  {
+    "id": "male_004_side_profile_right",
+    "status": "success",
+    "output_dir": "results_male_viewpoints/male_004_side_profile_right",
+    "comparison": {
+      "clip_score": {
+        "ttflux": 0.27114980697631835,
+        "eacps": 0.27899330139160156,
+        "delta": 0.007843494415283203,
+        "winner": "EACPS"
+      },
+      "aesthetic": {
+        "ttflux": 5.4094014167785645,
+        "eacps": 5.785569190979004,
+        "delta": 0.37616777420043945,
+        "winner": "EACPS"
+      },
+      "lpips": {
+        "ttflux": 0.472527414560318,
+        "eacps": 0.43013226985931396,
+        "delta": 0.04239514470100403,
+        "winner": "EACPS"
+      }
+    }
+  },
+  {
+    "id": "male_005_back_view_walking",
+    "status": "success",
+    "output_dir": "results_male_viewpoints/male_005_back_view_walking",
+    "comparison": {
+      "clip_score": {
+        "ttflux": 0.2967613029479981,
+        "eacps": 0.2722336959838867,
+        "delta": -0.02452760696411138,
+        "winner": "TT-FLUX"
+      },
+      "aesthetic": {
+        "ttflux": 5.478611469268799,
+        "eacps": 5.238524436950684,
+        "delta": -0.24008703231811523,
+        "winner": "TT-FLUX"
+      },
+      "lpips": {
+        "ttflux": 0.7917631268501282,
+        "eacps": 0.3182467520236969,
+        "delta": 0.4735163748264313,
+        "winner": "EACPS"
+      }
+    }
+  }
+]

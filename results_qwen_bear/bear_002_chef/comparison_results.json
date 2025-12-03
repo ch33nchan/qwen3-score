@@ -1,0 +1,89 @@
+{
+  "input_image": "data/bear.png",
+  "prompt": "Add a silver spatula in the bear's right hand, place a few vegetables (carrot, onion, green pepper) and spice bottles near the bear's left side, keep the white background unchanged",
+  "ttflux_paper_reference": {
+    "model": "FLUX.1-dev",
+    "benchmark": "DrawBench",
+    "clip_score": 0.71,
+    "aesthetic": 5.79,
+    "imagereward": 0.97
+  },
+  "ttflux": {
+    "method": "Random Search (Best of N by CLIPScore)",
+    "model": "Qwen-Image-Edit",
+    "best_candidate_idx": 3,
+    "metrics": {
+      "clip_score": 0.3181111145019531,
+      "aesthetic": 5.5936479568481445,
+      "imagereward": 0.0,
+      "lpips": 0.2319280505180359,
+      "candidate_idx": 3
+    },
+    "all_candidates": [
+      {
+        "clip_score": 0.302236328125,
+        "aesthetic": 5.473636150360107,
+        "imagereward": 0.0,
+        "lpips": 0.3092348277568817,
+        "candidate_idx": 0
+      },
+      {
+        "clip_score": 0.30439884185791016,
+        "aesthetic": 5.680470943450928,
+        "imagereward": 0.0,
+        "lpips": 0.2972286343574524,
+        "candidate_idx": 1
+      },
+      {
+        "clip_score": 0.3128572654724121,
+        "aesthetic": 5.823336124420166,
+        "imagereward": 0.0,
+        "lpips": 0.3807961344718933,
+        "candidate_idx": 2
+      },
+      {
+        "clip_score": 0.3181111145019531,
+        "aesthetic": 5.5936479568481445,
+        "imagereward": 0.0,
+        "lpips": 0.2319280505180359,
+        "candidate_idx": 3
+      }
+    ]
+  },
+  "eacps": {
+    "method": "Multi-stage Search (EACPS)",
+    "model": "Qwen-Image-Edit",
+    "metrics": {
+      "clip_score": 0.3245650100708008,
+      "aesthetic": 5.7806220054626465,
+      "imagereward": 0.0,
+      "lpips": 0.28479692339897156
+    }
+  },
+  "comparison": {
+    "clip_score": {
+      "ttflux": 0.3181111145019531,
+      "eacps": 0.3245650100708008,
+      "delta": 0.0064538955688476785,
+      "winner": "EACPS"
+    },
+    "aesthetic": {
+      "ttflux": 5.5936479568481445,
+      "eacps": 5.7806220054626465,
+      "delta": 0.18697404861450195,
+      "winner": "EACPS"
+    },
+    "lpips": {
+      "ttflux": 0.2319280505180359,
+      "eacps": 0.28479692339897156,
+      "delta": -0.05286887288093567,
+      "winner": "TT-FLUX"
+    }
+  },
+  "config": {
+    "num_samples": 4,
+    "k_global": 4,
+    "m_global": 2,
+    "k_local": 2
+  }
+}

@@ -1,0 +1,89 @@
+{
+  "input_image": "data/indian2_resized.png",
+  "prompt": "Replace the flag with the United Kingdom flag, Union Jack, keep the person and pose exactly the same, RAW photo, natural skin texture, photorealistic",
+  "ttflux_paper_reference": {
+    "model": "FLUX.1-dev",
+    "benchmark": "DrawBench",
+    "clip_score": 0.71,
+    "aesthetic": 5.79,
+    "imagereward": 0.97
+  },
+  "ttflux": {
+    "method": "Random Search (Best of N by CLIPScore)",
+    "model": "Qwen-Image-Edit",
+    "best_candidate_idx": 1,
+    "metrics": {
+      "clip_score": 0.27556800842285156,
+      "aesthetic": 5.462149620056152,
+      "imagereward": 0.0,
+      "lpips": 0.5197963714599609,
+      "candidate_idx": 1
+    },
+    "all_candidates": [
+      {
+        "clip_score": 0.26212516784667966,
+        "aesthetic": 5.526392459869385,
+        "imagereward": 0.0,
+        "lpips": 0.5089584589004517,
+        "candidate_idx": 0
+      },
+      {
+        "clip_score": 0.27556800842285156,
+        "aesthetic": 5.462149620056152,
+        "imagereward": 0.0,
+        "lpips": 0.5197963714599609,
+        "candidate_idx": 1
+      },
+      {
+        "clip_score": 0.2715301513671875,
+        "aesthetic": 5.400084495544434,
+        "imagereward": 0.0,
+        "lpips": 0.4996284246444702,
+        "candidate_idx": 2
+      },
+      {
+        "clip_score": 0.2615558815002441,
+        "aesthetic": 5.456049919128418,
+        "imagereward": 0.0,
+        "lpips": 0.48673510551452637,
+        "candidate_idx": 3
+      }
+    ]
+  },
+  "eacps": {
+    "method": "Multi-stage Search (EACPS)",
+    "model": "Qwen-Image-Edit",
+    "metrics": {
+      "clip_score": 0.2741339492797852,
+      "aesthetic": 5.2689924240112305,
+      "imagereward": 0.0,
+      "lpips": 0.5212151408195496
+    }
+  },
+  "comparison": {
+    "clip_score": {
+      "ttflux": 0.27556800842285156,
+      "eacps": 0.2741339492797852,
+      "delta": -0.0014340591430663796,
+      "winner": "TT-FLUX"
+    },
+    "aesthetic": {
+      "ttflux": 5.462149620056152,
+      "eacps": 5.2689924240112305,
+      "delta": -0.19315719604492188,
+      "winner": "TT-FLUX"
+    },
+    "lpips": {
+      "ttflux": 0.5197963714599609,
+      "eacps": 0.5212151408195496,
+      "delta": -0.001418769359588623,
+      "winner": "TT-FLUX"
+    }
+  },
+  "config": {
+    "num_samples": 4,
+    "k_global": 4,
+    "m_global": 2,
+    "k_local": 2
+  }
+}

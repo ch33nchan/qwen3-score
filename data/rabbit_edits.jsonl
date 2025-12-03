@@ -1,0 +1,23 @@
+{"id": "rabbit_purple",          "image_path": "rabbit.png", "prompt": "Change the rabbits color to purple with a flash light background"}
+{"id": "rabbit_rainbow",         "image_path": "rabbit.png", "prompt": "change the color of rabbit to the colors of rainbow"}
+{"id": "rabbit_blue",            "image_path": "rabbit.png", "prompt": "turn the rabbit blue and add a soft spotlight"}
+{"id": "rabbit_background_dark", "image_path": "rabbit.png", "prompt": "keep the rabbit as is but darken the background"}
+{"id": "rabbit_night",           "image_path": "rabbit.png", "prompt": "make the scene look like night but keep the rabbit natural"}
+{"id": "rabbit_glow_eyes",       "image_path": "rabbit.png", "prompt": "give the rabbit glowing red eyes, nothing else"}
+{"id": "rabbit_army",            "image_path": "rabbit.png", "prompt": "make the rabbit look like an army soldier"}
+{"id": "rabbit_gym",             "image_path": "rabbit.png", "prompt": "make the rabbit look like a gym athlete"}
+{"id": "rabbit_banker",          "image_path": "rabbit.png", "prompt": "make the rabbit look like a banker"}
+{"id": "rabbit_sigma",           "image_path": "rabbit.png", "prompt": "make the rabbit look like a sigma with sunglasses"}
+{"id": "rabbit_snow",            "image_path": "rabbit.png", "prompt": "make the rabbit look like a snowman"}
+{"id": "rabbit_santa",           "image_path": "rabbit.png", "prompt": "make the rabbit look like santa claus"}
+{"id": "rabbit_formal_black",    "image_path": "rabbit.png", "prompt": "make the rabbit wear a black hat and black suit"}
+{"id": "rabbit_chef",            "image_path": "rabbit.png", "prompt": "make the rabbit look like a chef"}
+{"id": "rabbit_doctor",          "image_path": "rabbit.png", "prompt": "make the rabbit look like a doctor"}
+{"id": "rabbit_astronaut",       "image_path": "rabbit.png", "prompt": "make the rabbit look like an astronaut"}
+{"id": "rabbit_firefighter",     "image_path": "rabbit.png", "prompt": "make the rabbit look like a firefighter"}
+{"id": "rabbit_pirate",          "image_path": "rabbit.png", "prompt": "make the rabbit look like a pirate"}
+{"id": "rabbit_king",            "image_path": "rabbit.png", "prompt": "make the rabbit look like a king"}
+{"id": "rabbit_queen",           "image_path": "rabbit.png", "prompt": "make the rabbit look like a queen"}
+{"id": "rabbit_ninja",           "image_path": "rabbit.png", "prompt": "make the rabbit look like a ninja"}
+{"id": "rabbit_superhero",       "image_path": "rabbit.png", "prompt": "make the rabbit look like a superhero"}
+{"id": "rabbit_artist",          "image_path": "rabbit.png", "prompt": "make the rabbit look like an artist"}

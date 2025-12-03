@@ -1,0 +1,89 @@
+{
+  "input_image": "data/bear.png",
+  "prompt": "This bear is wearing a spacesuit and pointing towards the distance",
+  "ttflux_paper_reference": {
+    "model": "FLUX.1-dev",
+    "benchmark": "DrawBench",
+    "clip_score": 0.71,
+    "aesthetic": 5.79,
+    "imagereward": 0.97
+  },
+  "ttflux": {
+    "method": "Random Search (Best of N by CLIPScore)",
+    "model": "Qwen-Image-Edit",
+    "best_candidate_idx": 2,
+    "metrics": {
+      "clip_score": 0.280557804107666,
+      "aesthetic": 6.136322975158691,
+      "imagereward": 0.0,
+      "lpips": 0.6349928379058838,
+      "candidate_idx": 2
+    },
+    "all_candidates": [
+      {
+        "clip_score": 0.2637189292907715,
+        "aesthetic": 6.469413757324219,
+        "imagereward": 0.0,
+        "lpips": 0.6776840686798096,
+        "candidate_idx": 0
+      },
+      {
+        "clip_score": 0.2580862045288086,
+        "aesthetic": 6.185887813568115,
+        "imagereward": 0.0,
+        "lpips": 0.720220685005188,
+        "candidate_idx": 1
+      },
+      {
+        "clip_score": 0.280557804107666,
+        "aesthetic": 6.136322975158691,
+        "imagereward": 0.0,
+        "lpips": 0.6349928379058838,
+        "candidate_idx": 2
+      },
+      {
+        "clip_score": 0.27187896728515626,
+        "aesthetic": 6.278502464294434,
+        "imagereward": 0.0,
+        "lpips": 0.30474093556404114,
+        "candidate_idx": 3
+      }
+    ]
+  },
+  "eacps": {
+    "method": "Multi-stage Search (EACPS)",
+    "model": "Qwen-Image-Edit",
+    "metrics": {
+      "clip_score": 0.2905750846862793,
+      "aesthetic": 6.207335472106934,
+      "imagereward": 0.0,
+      "lpips": 0.29832586646080017
+    }
+  },
+  "comparison": {
+    "clip_score": {
+      "ttflux": 0.280557804107666,
+      "eacps": 0.2905750846862793,
+      "delta": 0.010017280578613286,
+      "winner": "EACPS"
+    },
+    "aesthetic": {
+      "ttflux": 6.136322975158691,
+      "eacps": 6.207335472106934,
+      "delta": 0.07101249694824219,
+      "winner": "EACPS"
+    },
+    "lpips": {
+      "ttflux": 0.6349928379058838,
+      "eacps": 0.29832586646080017,
+      "delta": 0.3366669714450836,
+      "winner": "EACPS"
+    }
+  },
+  "config": {
+    "num_samples": 4,
+    "k_global": 4,
+    "m_global": 2,
+    "k_local": 2
+  }
+}

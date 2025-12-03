@@ -1,0 +1,89 @@
+{
+  "input_image": "data/indian1_resized.png",
+  "prompt": "Change the person's outfit to traditional Indian kurta pajama in cream color with golden embroidery, RAW photo, natural skin texture, photorealistic",
+  "ttflux_paper_reference": {
+    "model": "FLUX.1-dev",
+    "benchmark": "DrawBench",
+    "clip_score": 0.71,
+    "aesthetic": 5.79,
+    "imagereward": 0.97
+  },
+  "ttflux": {
+    "method": "Random Search (Best of N by CLIPScore)",
+    "model": "Qwen-Image-Edit",
+    "best_candidate_idx": 0,
+    "metrics": {
+      "clip_score": 0.25344520568847656,
+      "aesthetic": 5.708507061004639,
+      "imagereward": 0.0,
+      "lpips": 0.40396764874458313,
+      "candidate_idx": 0
+    },
+    "all_candidates": [
+      {
+        "clip_score": 0.25344520568847656,
+        "aesthetic": 5.708507061004639,
+        "imagereward": 0.0,
+        "lpips": 0.40396764874458313,
+        "candidate_idx": 0
+      },
+      {
+        "clip_score": 0.2426388931274414,
+        "aesthetic": 5.580479621887207,
+        "imagereward": 0.0,
+        "lpips": 0.39468318223953247,
+        "candidate_idx": 1
+      },
+      {
+        "clip_score": 0.2428046417236328,
+        "aesthetic": 5.496182441711426,
+        "imagereward": 0.0,
+        "lpips": 0.4313371181488037,
+        "candidate_idx": 2
+      },
+      {
+        "clip_score": 0.23813541412353514,
+        "aesthetic": 5.565341949462891,
+        "imagereward": 0.0,
+        "lpips": 0.40727466344833374,
+        "candidate_idx": 3
+      }
+    ]
+  },
+  "eacps": {
+    "method": "Multi-stage Search (EACPS)",
+    "model": "Qwen-Image-Edit",
+    "metrics": {
+      "clip_score": 0.25413726806640624,
+      "aesthetic": 5.672725677490234,
+      "imagereward": 0.0,
+      "lpips": 0.3810791075229645
+    }
+  },
+  "comparison": {
+    "clip_score": {
+      "ttflux": 0.25344520568847656,
+      "eacps": 0.25413726806640624,
+      "delta": 0.0006920623779296808,
+      "winner": "EACPS"
+    },
+    "aesthetic": {
+      "ttflux": 5.708507061004639,
+      "eacps": 5.672725677490234,
+      "delta": -0.0357813835144043,
+      "winner": "TT-FLUX"
+    },
+    "lpips": {
+      "ttflux": 0.40396764874458313,
+      "eacps": 0.3810791075229645,
+      "delta": 0.022888541221618652,
+      "winner": "EACPS"
+    }
+  },
+  "config": {
+    "num_samples": 4,
+    "k_global": 4,
+    "m_global": 2,
+    "k_local": 2
+  }
+}

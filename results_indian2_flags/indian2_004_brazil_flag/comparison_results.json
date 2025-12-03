@@ -1,0 +1,89 @@
+{
+  "input_image": "data/indian2_resized.png",
+  "prompt": "Replace the flag with the Brazil flag, green with yellow diamond and blue globe, keep the person and pose exactly the same, RAW photo, natural skin texture, photorealistic",
+  "ttflux_paper_reference": {
+    "model": "FLUX.1-dev",
+    "benchmark": "DrawBench",
+    "clip_score": 0.71,
+    "aesthetic": 5.79,
+    "imagereward": 0.97
+  },
+  "ttflux": {
+    "method": "Random Search (Best of N by CLIPScore)",
+    "model": "Qwen-Image-Edit",
+    "best_candidate_idx": 2,
+    "metrics": {
+      "clip_score": 0.3000640869140625,
+      "aesthetic": 5.314536094665527,
+      "imagereward": 0.0,
+      "lpips": 0.43131008744239807,
+      "candidate_idx": 2
+    },
+    "all_candidates": [
+      {
+        "clip_score": 0.29980241775512695,
+        "aesthetic": 5.331254959106445,
+        "imagereward": 0.0,
+        "lpips": 0.4367613196372986,
+        "candidate_idx": 0
+      },
+      {
+        "clip_score": 0.28978073120117187,
+        "aesthetic": 5.330203533172607,
+        "imagereward": 0.0,
+        "lpips": 0.4548937678337097,
+        "candidate_idx": 1
+      },
+      {
+        "clip_score": 0.3000640869140625,
+        "aesthetic": 5.314536094665527,
+        "imagereward": 0.0,
+        "lpips": 0.43131008744239807,
+        "candidate_idx": 2
+      },
+      {
+        "clip_score": 0.2935224723815918,
+        "aesthetic": 5.33731746673584,
+        "imagereward": 0.0,
+        "lpips": 0.42895305156707764,
+        "candidate_idx": 3
+      }
+    ]
+  },
+  "eacps": {
+    "method": "Multi-stage Search (EACPS)",
+    "model": "Qwen-Image-Edit",
+    "metrics": {
+      "clip_score": 0.3050911140441894,
+      "aesthetic": 5.189153671264648,
+      "imagereward": 0.0,
+      "lpips": 0.4360526204109192
+    }
+  },
+  "comparison": {
+    "clip_score": {
+      "ttflux": 0.3000640869140625,
+      "eacps": 0.3050911140441894,
+      "delta": 0.0050270271301269265,
+      "winner": "EACPS"
+    },
+    "aesthetic": {
+      "ttflux": 5.314536094665527,
+      "eacps": 5.189153671264648,
+      "delta": -0.1253824234008789,
+      "winner": "TT-FLUX"
+    },
+    "lpips": {
+      "ttflux": 0.43131008744239807,
+      "eacps": 0.4360526204109192,
+      "delta": -0.004742532968521118,
+      "winner": "TT-FLUX"
+    }
+  },
+  "config": {
+    "num_samples": 4,
+    "k_global": 4,
+    "m_global": 2,
+    "k_local": 2
+  }
+}

@@ -1,0 +1,89 @@
+{
+  "input_image": "data/indian1_resized.png",
+  "prompt": "Change the person's outfit to a black leather jacket over white t-shirt, casual streetwear look, RAW photo, natural skin texture, photorealistic",
+  "ttflux_paper_reference": {
+    "model": "FLUX.1-dev",
+    "benchmark": "DrawBench",
+    "clip_score": 0.71,
+    "aesthetic": 5.79,
+    "imagereward": 0.97
+  },
+  "ttflux": {
+    "method": "Random Search (Best of N by CLIPScore)",
+    "model": "Qwen-Image-Edit",
+    "best_candidate_idx": 2,
+    "metrics": {
+      "clip_score": 0.24428970336914063,
+      "aesthetic": 5.3535919189453125,
+      "imagereward": 0.0,
+      "lpips": 0.6186115145683289,
+      "candidate_idx": 2
+    },
+    "all_candidates": [
+      {
+        "clip_score": 0.24147539138793944,
+        "aesthetic": 5.4017229080200195,
+        "imagereward": 0.0,
+        "lpips": 0.5559734106063843,
+        "candidate_idx": 0
+      },
+      {
+        "clip_score": 0.23033767700195312,
+        "aesthetic": 5.372411727905273,
+        "imagereward": 0.0,
+        "lpips": 0.46846234798431396,
+        "candidate_idx": 1
+      },
+      {
+        "clip_score": 0.24428970336914063,
+        "aesthetic": 5.3535919189453125,
+        "imagereward": 0.0,
+        "lpips": 0.6186115145683289,
+        "candidate_idx": 2
+      },
+      {
+        "clip_score": 0.2382834243774414,
+        "aesthetic": 5.321605682373047,
+        "imagereward": 0.0,
+        "lpips": 0.47186025977134705,
+        "candidate_idx": 3
+      }
+    ]
+  },
+  "eacps": {
+    "method": "Multi-stage Search (EACPS)",
+    "model": "Qwen-Image-Edit",
+    "metrics": {
+      "clip_score": 0.2595390892028809,
+      "aesthetic": 5.38245964050293,
+      "imagereward": 0.0,
+      "lpips": 0.5971099734306335
+    }
+  },
+  "comparison": {
+    "clip_score": {
+      "ttflux": 0.24428970336914063,
+      "eacps": 0.2595390892028809,
+      "delta": 0.015249385833740248,
+      "winner": "EACPS"
+    },
+    "aesthetic": {
+      "ttflux": 5.3535919189453125,
+      "eacps": 5.38245964050293,
+      "delta": 0.028867721557617188,
+      "winner": "EACPS"
+    },
+    "lpips": {
+      "ttflux": 0.6186115145683289,
+      "eacps": 0.5971099734306335,
+      "delta": 0.021501541137695312,
+      "winner": "EACPS"
+    }
+  },
+  "config": {
+    "num_samples": 4,
+    "k_global": 4,
+    "m_global": 2,
+    "k_local": 2
+  }
+}

@@ -1,0 +1,89 @@
+{
+  "input_image": "data/indian1_resized.png",
+  "prompt": "Change the person's outfit to a formal navy blue business suit with white shirt and red tie, RAW photo, natural skin texture, photorealistic",
+  "ttflux_paper_reference": {
+    "model": "FLUX.1-dev",
+    "benchmark": "DrawBench",
+    "clip_score": 0.71,
+    "aesthetic": 5.79,
+    "imagereward": 0.97
+  },
+  "ttflux": {
+    "method": "Random Search (Best of N by CLIPScore)",
+    "model": "Qwen-Image-Edit",
+    "best_candidate_idx": 1,
+    "metrics": {
+      "clip_score": 0.24336891174316405,
+      "aesthetic": 5.66505241394043,
+      "imagereward": 0.0,
+      "lpips": 0.4442092478275299,
+      "candidate_idx": 1
+    },
+    "all_candidates": [
+      {
+        "clip_score": 0.22497459411621093,
+        "aesthetic": 5.626890659332275,
+        "imagereward": 0.0,
+        "lpips": 0.3889232277870178,
+        "candidate_idx": 0
+      },
+      {
+        "clip_score": 0.24336891174316405,
+        "aesthetic": 5.66505241394043,
+        "imagereward": 0.0,
+        "lpips": 0.4442092478275299,
+        "candidate_idx": 1
+      },
+      {
+        "clip_score": 0.23390670776367187,
+        "aesthetic": 5.605385780334473,
+        "imagereward": 0.0,
+        "lpips": 0.4305310547351837,
+        "candidate_idx": 2
+      },
+      {
+        "clip_score": 0.22461271286010742,
+        "aesthetic": 5.4851508140563965,
+        "imagereward": 0.0,
+        "lpips": 0.419312059879303,
+        "candidate_idx": 3
+      }
+    ]
+  },
+  "eacps": {
+    "method": "Multi-stage Search (EACPS)",
+    "model": "Qwen-Image-Edit",
+    "metrics": {
+      "clip_score": 0.24719026565551758,
+      "aesthetic": 5.649351119995117,
+      "imagereward": 0.0,
+      "lpips": 0.4672667682170868
+    }
+  },
+  "comparison": {
+    "clip_score": {
+      "ttflux": 0.24336891174316405,
+      "eacps": 0.24719026565551758,
+      "delta": 0.0038213539123535256,
+      "winner": "EACPS"
+    },
+    "aesthetic": {
+      "ttflux": 5.66505241394043,
+      "eacps": 5.649351119995117,
+      "delta": -0.0157012939453125,
+      "winner": "TT-FLUX"
+    },
+    "lpips": {
+      "ttflux": 0.4442092478275299,
+      "eacps": 0.4672667682170868,
+      "delta": -0.023057520389556885,
+      "winner": "TT-FLUX"
+    }
+  },
+  "config": {
+    "num_samples": 4,
+    "k_global": 4,
+    "m_global": 2,
+    "k_local": 2
+  }
+}

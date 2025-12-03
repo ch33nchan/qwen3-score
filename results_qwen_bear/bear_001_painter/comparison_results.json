@@ -1,0 +1,89 @@
+{
+  "input_image": "data/bear.png",
+  "prompt": "Add a colorful art board and paintbrush in the bear's hands, position the bear standing in front of the art board as if painting",
+  "ttflux_paper_reference": {
+    "model": "FLUX.1-dev",
+    "benchmark": "DrawBench",
+    "clip_score": 0.71,
+    "aesthetic": 5.79,
+    "imagereward": 0.97
+  },
+  "ttflux": {
+    "method": "Random Search (Best of N by CLIPScore)",
+    "model": "Qwen-Image-Edit",
+    "best_candidate_idx": 3,
+    "metrics": {
+      "clip_score": 0.2916876983642578,
+      "aesthetic": 5.614826679229736,
+      "imagereward": 0.0,
+      "lpips": 0.6073545813560486,
+      "candidate_idx": 3
+    },
+    "all_candidates": [
+      {
+        "clip_score": 0.27408790588378906,
+        "aesthetic": 5.664527416229248,
+        "imagereward": 0.0,
+        "lpips": 0.5781559944152832,
+        "candidate_idx": 0
+      },
+      {
+        "clip_score": 0.2785850143432617,
+        "aesthetic": 5.850748538970947,
+        "imagereward": 0.0,
+        "lpips": 0.5395547151565552,
+        "candidate_idx": 1
+      },
+      {
+        "clip_score": 0.2789738082885742,
+        "aesthetic": 5.693842887878418,
+        "imagereward": 0.0,
+        "lpips": 0.48012709617614746,
+        "candidate_idx": 2
+      },
+      {
+        "clip_score": 0.2916876983642578,
+        "aesthetic": 5.614826679229736,
+        "imagereward": 0.0,
+        "lpips": 0.6073545813560486,
+        "candidate_idx": 3
+      }
+    ]
+  },
+  "eacps": {
+    "method": "Multi-stage Search (EACPS)",
+    "model": "Qwen-Image-Edit",
+    "metrics": {
+      "clip_score": 0.3340158462524414,
+      "aesthetic": 5.864670753479004,
+      "imagereward": 0.0,
+      "lpips": 0.5270249843597412
+    }
+  },
+  "comparison": {
+    "clip_score": {
+      "ttflux": 0.2916876983642578,
+      "eacps": 0.3340158462524414,
+      "delta": 0.04232814788818362,
+      "winner": "EACPS"
+    },
+    "aesthetic": {
+      "ttflux": 5.614826679229736,
+      "eacps": 5.864670753479004,
+      "delta": 0.24984407424926758,
+      "winner": "EACPS"
+    },
+    "lpips": {
+      "ttflux": 0.6073545813560486,
+      "eacps": 0.5270249843597412,
+      "delta": 0.08032959699630737,
+      "winner": "EACPS"
+    }
+  },
+  "config": {
+    "num_samples": 4,
+    "k_global": 4,
+    "m_global": 2,
+    "k_local": 2
+  }
+}
