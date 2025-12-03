@@ -1,0 +1,6 @@
+{"id": "male_001_side_view", "image": "male.jpg", "prompt": "Rotate the person to show a side profile view, the person facing left with their profile clearly visible, natural lighting, realistic skin texture, natural hair texture, photographic quality"}
+{"id": "male_002_behind_view", "image": "male.jpg", "prompt": "Rotate the person to show them from behind, the person facing away from camera showing their back, maintaining natural pose and lighting, realistic textures, photographic quality"}
+{"id": "male_003_top_view", "image": "male.jpg", "prompt": "Change the camera perspective to a top-down view, looking down at the person from above, bird's eye view angle, realistic textures, natural skin and hair, photographic quality"}
+{"id": "male_004_side_profile_right", "image": "male.jpg", "prompt": "Show the person in a right-side profile view, person facing right with side facial features and silhouette visible, natural portrait lighting, realistic skin texture, natural hair texture, photographic quality"}
+{"id": "male_005_back_view_walking", "image": "male.jpg", "prompt": "Show the person walking away from camera, back view with natural walking pose, maintaining realistic proportions and lighting, realistic textures, natural skin and hair, photographic quality"}
+

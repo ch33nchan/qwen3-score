@@ -1,0 +1,58 @@
+
+<View>
+  <Header value="Image Edit Comparison"/>
+  <Text name="prompt" value="Edit prompt: $prompt"/>
+  
+  <View style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin: 20px 0;">
+    <View style="text-align: center;">
+      <Header value="Original Image"/>
+      <Image name="original" value="$original"/>
+    </View>
+    <View style="text-align: center;">
+      <Header value="Option A (TT-FLUX)"/>
+      <Image name="option_a" value="$option_a"/>
+    </View>
+    <View style="text-align: center;">
+      <Header value="Option B (EACPS)"/>
+      <Image name="option_b" value="$option_b"/>
+    </View>
+  </View>
+  
+  <Header value="1. Which edit better follows the prompt?"/>
+  <Choices name="prompt_following" toName="original" choice="single" required="true">
+    <Choice value="A much better"/>
+    <Choice value="A slightly better"/>
+    <Choice value="Equal"/>
+    <Choice value="B slightly better"/>
+    <Choice value="B much better"/>
+  </Choices>
+  
+  <Header value="2. Which edit has better visual quality?"/>
+  <Choices name="visual_quality" toName="original" choice="single" required="true">
+    <Choice value="A much better"/>
+    <Choice value="A slightly better"/>
+    <Choice value="Equal"/>
+    <Choice value="B slightly better"/>
+    <Choice value="B much better"/>
+  </Choices>
+  
+  <Header value="3. Which edit better preserves the original (where it should)?"/>
+  <Choices name="preservation" toName="original" choice="single" required="true">
+    <Choice value="A much better"/>
+    <Choice value="A slightly better"/>
+    <Choice value="Equal"/>
+    <Choice value="B slightly better"/>
+    <Choice value="B much better"/>
+  </Choices>
+  
+  <Header value="4. Overall, which edit is better?"/>
+  <Choices name="overall" toName="original" choice="single" required="true">
+    <Choice value="A is better"/>
+    <Choice value="B is better"/>
+    <Choice value="Both equally good"/>
+    <Choice value="Both equally bad"/>
+  </Choices>
+  
+  <Header value="5. Comments (optional)"/>
+  <TextArea name="comments" toName="original" rows="2" placeholder="Any additional observations..."/>
+</View>

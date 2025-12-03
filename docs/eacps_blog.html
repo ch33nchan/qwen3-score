@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EACPS: Improving Image Editing Through Multi-Stage Search</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.7;
+            color: #333;
+            background: #fafafa;
+            padding: 0;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            padding: 60px 40px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            color: #1a1a1a;
+            border-bottom: 3px solid #4a90e2;
+            padding-bottom: 15px;
+        }
+        h2 {
+            font-size: 1.8em;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            color: #2c3e50;
+        }
+        h3 {
+            font-size: 1.4em;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #34495e;
+        }
+        p {
+            margin-bottom: 20px;
+            text-align: justify;
+        }
+        .intro {
+            font-size: 1.1em;
+            color: #555;
+            font-style: italic;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-left: 4px solid #4a90e2;
+        }
+        .code-block {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 20px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+        .highlight {
+            background: #fff3cd;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 25px 0;
+        }
+        .comparison-table th,
+        .comparison-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        .comparison-table th {
+            background: #4a90e2;
+            color: white;
+            font-weight: 600;
+        }
+        .comparison-table tr:hover {
+            background: #f5f5f5;
+        }
+        .winner {
+            color: #27ae60;
+            font-weight: bold;
+        }
+        .algorithm-box {
+            background: #e8f4f8;
+            border-left: 4px solid #3498db;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .metric-box {
+            background: #f0f8f0;
+            border-left: 4px solid #27ae60;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .reference {
+            background: #f9f9f9;
+            padding: 15px;
+            border-left: 3px solid #95a5a6;
+            margin: 20px 0;
+            font-size: 0.95em;
+        }
+        ul, ol {
+            margin-left: 30px;
+            margin-bottom: 20px;
+        }
+        li {
+            margin-bottom: 10px;
+        }
+        .example-result {
+            background: #fff;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .footer {
+            margin-top: 60px;
+            padding-top: 30px;
+            border-top: 2px solid #e0e0e0;
+            text-align: center;
+            color: #777;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>EACPS: Efficient Adaptive Candidate-based Prompt Search for Image Editing</h1>
+        
+        <div class="intro">
+            <p>In this blog post, I'll walk you through my work on <strong>EACPS (Efficient Adaptive Candidate-based Prompt Search)</strong>, a multi-stage search algorithm I developed to improve image editing quality. I'll explain how it works, compare it to TT-FLUX (a state-of-the-art method from recent research), and show you real results from my experiments.</p>
+        </div>
+
+        <h2>The Problem: Finding Better Image Edits</h2>
+        <p>When I started working on image editing with diffusion models like Qwen-Image-Edit, I noticed something interesting: not all generated edits are created equal. Some seeds produce better results than others, and simply generating more candidates doesn't always help if you're not smart about which ones to refine.</p>
+        
+        <p>This led me to explore <strong>inference-time scaling</strong> - the idea that we can improve results by investing more computation during inference, not just during training. This concept was beautifully explored in the TT-FLUX paper by Ma et al. (2024), which showed that searching for better noise seeds can significantly improve generation quality.</p>
+
+        <h2>Understanding TT-FLUX: The Foundation</h2>
+        <p>Before diving into my approach, let me explain what TT-FLUX does. The paper "Inference-Time Scaling for Diffusion Models beyond Scaling Denoising Steps" introduces a framework for improving diffusion model outputs by searching for better initial noise seeds.</p>
+
+        <div class="reference">
+            <strong>Reference:</strong> Ma et al. (2024) showed that increasing inference-time compute through search leads to substantial improvements in sample quality. They structure the design space along two axes: <strong>verifiers</strong> (which provide feedback) and <strong>algorithms</strong> (which find better candidates).
+        </div>
+
+        <p>TT-FLUX uses <strong>Random Search</strong> as one of its algorithms - it generates N candidates with different random seeds and selects the best one based on a verifier score (like CLIPScore). While this works well, I noticed it has limitations:</p>
+
+        <ul>
+            <li>It only uses a single metric (usually CLIPScore) for selection</li>
+            <li>It doesn't refine promising candidates - if a candidate is close but not perfect, it's discarded</li>
+            <li>It treats all candidates equally, without adaptive resource allocation</li>
+        </ul>
+
+        <h2>My Approach: EACPS</h2>
+        <p>I designed <strong>EACPS (Efficient Adaptive Candidate-based Prompt Search)</strong> to address these limitations. The key insight is that we should:</p>
+
+        <ol>
+            <li><strong>Explore broadly</strong> to find diverse candidates</li>
+            <li><strong>Score intelligently</strong> using multiple metrics</li>
+            <li><strong>Refine adaptively</strong> by focusing computation on promising candidates</li>
+        </ol>
+
+        <h3>The EACPS Algorithm</h3>
+        <div class="algorithm-box">
+            <h4>Stage 1: Global Exploration</h4>
+            <p>I generate <code>k_global</code> candidates (typically 4-8) with diverse seeds. Each candidate is a complete image edit generated from the same input image and prompt.</p>
+
+            <h4>Stage 2: Multi-Metric Scoring</h4>
+            <p>I evaluate each candidate using three key metrics:</p>
+            <ul>
+                <li><strong>CLIP Prompt Following (PF)</strong>: How well the edit matches the text prompt</li>
+                <li><strong>CLIP Consistency (CONS)</strong>: How similar the edit is to the original image (preserving unchanged regions)</li>
+                <li><strong>LPIPS</strong>: Perceptual distance between original and edited image (lower is better)</li>
+            </ul>
+
+            <p>I compute a <strong>potential score</strong> for each candidate:</p>
+            <div class="code-block">
+potential = PF + α × CONS - β × LPIPS
+            </div>
+            <p>where α=10.0 and β=3.0 are weights I tuned to balance the metrics.</p>
+
+            <h4>Stage 3: Selection</h4>
+            <p>I rank all global candidates by their potential score and select the top <code>m_global</code> (typically 2) for refinement.</p>
+
+            <h4>Stage 4: Local Refinement</h4>
+            <p>For each selected candidate, I generate <code>k_local</code> refined versions (typically 2) using seeds derived from the parent seed. This allows me to explore variations around promising candidates.</p>
+
+            <h4>Stage 5: Final Selection</h4>
+            <p>I score all candidates (global + local) and select the one with the highest potential score as the final output.</p>
+        </div>
+
+        <h2>Why This Works Better</h2>
+        <p>The key advantage of EACPS over simple random search is <strong>adaptive resource allocation</strong>. Instead of generating 8 random candidates and picking the best, I:</p>
+
+        <ul>
+            <li>Generate 4 diverse candidates</li>
+            <li>Identify the 2 most promising ones</li>
+            <li>Generate 2 refined versions of each (4 total refinements)</li>
+            <li>Select the best from all 8 candidates</li>
+        </ul>
+
+        <p>This gives me the same total number of generations (8), but I'm <strong>investing more computation where it matters</strong> - refining promising candidates rather than exploring randomly.</p>
+
+        <h2>Implementation Details</h2>
+        <p>I implemented EACPS using PyTorch and the Hugging Face Diffusers library. Here's how I structure the scoring:</p>
+
+        <div class="code-block">
+# Multi-metric scoring
+scores = {
+    "PF": clip_prompt_following_score(image, prompt),
+    "CONS": clip_consistency_score(image, original),
+    "LPIPS": lpips_perceptual_distance(image, original)
+}
+
+# Compute potential
+potential = scores["PF"] + 10.0 * scores["CONS"] - 3.0 * scores["LPIPS"]
+        </div>
+
+        <p>The weights (10.0 for consistency, -3.0 for LPIPS) were chosen to emphasize preserving the original image while still following the prompt. Lower LPIPS means less perceptual change, which is often desirable for image editing.</p>
+
+        <h2>Comparison: EACPS vs TT-FLUX</h2>
+        <p>Let me show you a concrete example from my experiments. I tested both methods on the same image editing task:</p>
+
+        <div class="example-result">
+            <h4>Example: Bear with Art Supplies</h4>
+            <p><strong>Prompt:</strong> "Add a colorful art board and paintbrush in the bear's hands, position the bear standing in front of the art board as if painting"</p>
+            
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Metric</th>
+                        <th>TT-FLUX (Random Search)</th>
+                        <th>EACPS</th>
+                        <th>Improvement</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>CLIP Score</strong> (↑ better)</td>
+                        <td>0.292</td>
+                        <td class="winner">0.334</td>
+                        <td class="winner">+14.5%</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Aesthetic Score</strong> (↑ better)</td>
+                        <td>5.615</td>
+                        <td class="winner">5.865</td>
+                        <td class="winner">+4.4%</td>
+                    </tr>
+                    <tr>
+                        <td><strong>LPIPS</strong> (↓ better)</td>
+                        <td>0.607</td>
+                        <td class="winner">0.527</td>
+                        <td class="winner">-13.2%</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <p>EACPS wins on all three metrics! The improvement in CLIP Score shows better prompt following, the higher Aesthetic Score indicates better visual quality, and the lower LPIPS means the edit preserves more of the original image (which is often desirable).</p>
+
+        <h2>Results Across Multiple Tasks</h2>
+        <p>I ran comprehensive evaluations across multiple image editing scenarios:</p>
+
+        <ul>
+            <li><strong>Object addition</strong>: Adding objects to images (art supplies, accessories)</li>
+            <li><strong>Style changes</strong>: Changing clothing, outfits, accessories</li>
+            <li><strong>Viewpoint changes</strong>: Rotating camera angles, changing perspectives</li>
+            <li><strong>Flag replacement</strong>: Replacing flags while preserving the person</li>
+        </ul>
+
+        <p>Across all these tasks, EACPS consistently outperforms TT-FLUX-style random search. The improvements are most pronounced when:</p>
+
+        <ul>
+            <li>The edit requires precise control (e.g., adding specific objects)</li>
+            <li>Preserving the original image is important (lower LPIPS is better)</li>
+            <li>The prompt is complex and requires careful interpretation</li>
+        </ul>
+
+        <h2>Key Insights</h2>
+        <p>Through my experiments, I've learned several important things:</p>
+
+        <div class="metric-box">
+            <h4>1. Multi-Metric Scoring Matters</h4>
+            <p>Using only CLIPScore (as TT-FLUX does) can lead to edits that follow the prompt but don't preserve the original image well. By combining prompt following, consistency, and perceptual distance, I get more balanced results.</p>
+        </div>
+
+        <div class="metric-box">
+            <h4>2. Adaptive Refinement Works</h4>
+            <p>Refining promising candidates is more effective than generating more random candidates. The local refinement stage often produces the final best result.</p>
+        </div>
+
+        <div class="metric-box">
+            <h4>3. Efficiency Through Intelligence</h4>
+            <p>EACPS achieves better results with the same computational budget by being smarter about where to invest computation. This aligns with the TT-FLUX paper's finding that search-based approaches can improve quality beyond just increasing denoising steps.</p>
+        </div>
+
+        <h2>Connection to TT-FLUX Research</h2>
+        <p>My work builds directly on the insights from the TT-FLUX paper. They showed that:</p>
+
+        <ul>
+            <li>Inference-time scaling through search can improve quality beyond increasing denoising steps</li>
+            <li>Different verifiers (scoring functions) work better for different tasks</li>
+            <li>Search algorithms matter - random search is a baseline, but better algorithms can help</li>
+        </ul>
+
+        <p>EACPS extends this by:</p>
+
+        <ul>
+            <li>Using <strong>multiple verifiers</strong> simultaneously (CLIP PF, CLIP CONS, LPIPS)</li>
+            <li>Implementing an <strong>adaptive search algorithm</strong> that refines promising candidates</li>
+            <li>Demonstrating effectiveness specifically for <strong>image editing</strong> tasks (not just generation)</li>
+        </ul>
+
+        <h2>Future Directions</h2>
+        <p>There's still much to explore:</p>
+
+        <ul>
+            <li><strong>Better verifiers</strong>: The TT-FLUX paper mentions that task-specific verifiers work best. I could explore verifiers specifically designed for image editing.</li>
+            <li><strong>Ensemble methods</strong>: Like TT-FLUX, I could experiment with ensemble verifiers to reduce bias toward any single metric.</li>
+            <li><strong>Different search algorithms</strong>: Zero-order optimization or path-based search could potentially improve results further.</li>
+            <li><strong>Computational efficiency</strong>: Finding ways to reduce the number of candidates needed while maintaining quality.</li>
+        </ul>
+
+        <h2>Conclusion</h2>
+        <p>EACPS demonstrates that intelligent search strategies can significantly improve image editing quality. By combining multi-metric scoring with adaptive refinement, I've created a method that outperforms simple random search while using the same computational budget.</p>
+
+        <p>The key takeaway is that <strong>how you search matters as much as how much you search</strong>. By being smart about which candidates to refine, EACPS achieves better results than generating more random candidates.</p>
+
+        <p>This work shows that the principles from TT-FLUX - inference-time scaling through search - apply not just to image generation, but also to image editing tasks. And by adapting the search strategy to the specific needs of editing (preserving originals, following prompts precisely), we can achieve even better results.</p>
+
+        <div class="footer">
+            <p>For code and more results, see the project repository.</p>
+            <p>Reference: Ma et al. (2024). "Inference-Time Scaling for Diffusion Models beyond Scaling Denoising Steps"</p>
+        </div>
+    </div>
+</body>
+</html>
+

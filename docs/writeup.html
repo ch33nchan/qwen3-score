@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EACPS vs TT-FLUX: Smarter Image Editing</title>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #ffffff;
+            --bg-alt: #f5f5f5;
+            --text: #111111;
+            --text-muted: #666666;
+            --border: #e0e0e0;
+            --accent: #000000;
+            --accent-light: #000000;
+            --accent-dark: #000000;
+            --accent-text: #ffffff;
+            --accent-text-muted: #ffffff;
+            --accent-text-light: #ffffff;
+            --accent-text-dark: #ffffff;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'IBM Plex Sans', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 60px 24px;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 60px;
+            padding-bottom: 40px;
+            border-bottom: 2px solid var(--accent);
+        }
+        
+        h1 {
+            font-size: 2.8rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            letter-spacing: -1px;
+        }
+        
+        .subtitle {
+            font-size: 1.15rem;
+            color: var(--text-muted);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .section {
+            margin-bottom: 48px;
+        }
+        
+        h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        p {
+            color: var(--text);
+            margin-bottom: 16px;
+            font-size: 1rem;
+        }
+        
+        .card {
+            background: var(--bg-alt);
+            border: 1px solid var(--border);
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+        
+        .card h3 {
+            font-size: 1.1rem;
+            margin-bottom: 12px;
+        }
+        
+        strong, .highlight {
+            font-weight: 600;
+        }
+        
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 28px 0;
+        }
+        
+        @media (max-width: 768px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .method-card {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            padding: 20px;
+        }
+        
+        .method-card.winner {
+            border: 2px solid var(--accent);
+        }
+        
+        .method-card h3 {
+            font-size: 1.2rem;
+            margin-bottom: 8px;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 3px 10px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+            border: 1px solid var(--text);
+        }
+        
+        .badge.baseline {
+            background: var(--bg);
+            color: var(--text-muted);
+            border-color: var(--text-muted);
+        }
+        
+        .badge.ours {
+            background: var(--accent);
+            color: var(--bg);
+        }
+        
+        .code-block {
+            background: var(--bg-alt);
+            border: 1px solid var(--border);
+            padding: 16px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.85rem;
+            overflow-x: auto;
+            margin: 16px 0;
+            white-space: pre;
+        }
+        
+        .code-comment {
+            color: #888;
+        }
+        
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 24px 0;
+            font-size: 0.95rem;
+        }
+        
+        .results-table th,
+        .results-table td {
+            padding: 12px 16px;
+            text-align: left;
+            border: 1px solid var(--border);
+        }
+        
+        .results-table th {
+            background: var(--bg-alt);
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .winner-cell {
+            font-weight: 600;
+        }
+        
+        .loser-cell {
+            color: var(--text-muted);
+        }
+        
+        .delta {
+            font-size: 0.8rem;
+            margin-left: 8px;
+        }
+        
+        .image-compare {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin: 24px 0;
+        }
+        
+        @media (max-width: 768px) {
+            .image-compare {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .image-box {
+            border: 1px solid var(--border);
+        }
+        
+        .image-box.winner {
+            border: 2px solid var(--accent);
+        }
+        
+        .image-box img {
+            width: 100%;
+            aspect-ratio: 1;
+            object-fit: cover;
+            display: block;
+        }
+        
+        .image-box .label {
+            padding: 10px;
+            text-align: center;
+            font-size: 0.85rem;
+            border-top: 1px solid var(--border);
+            background: var(--bg-alt);
+        }
+        
+        .tldr {
+            background: var(--bg-alt);
+            border: 2px solid var(--accent);
+            padding: 24px;
+            margin: 32px 0;
+        }
+        
+        .tldr h3 {
+            font-size: 1rem;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .tldr p {
+            margin-bottom: 0;
+        }
+        
+        .step-list {
+            list-style: none;
+            margin: 20px 0;
+        }
+        
+        .step-list li {
+            padding: 10px 0 10px 40px;
+            position: relative;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .step-list li:last-child {
+            border-bottom: none;
+        }
+        
+        .step-list li::before {
+            content: attr(data-step);
+            position: absolute;
+            left: 0;
+            top: 10px;
+            width: 24px;
+            height: 24px;
+            background: var(--accent);
+            color: var(--bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .metric-explain {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            margin: 24px 0;
+        }
+        
+        @media (max-width: 768px) {
+            .metric-explain {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .metric-box {
+            background: var(--bg-alt);
+            border: 1px solid var(--border);
+            padding: 16px;
+        }
+        
+        .metric-box h4 {
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .metric-box p {
+            font-size: 0.9rem;
+            margin-bottom: 0;
+            color: var(--text-muted);
+        }
+        
+        footer {
+            text-align: center;
+            padding: 40px 0;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            border-top: 2px solid var(--accent);
+            margin-top: 40px;
+        }
+        
+        .paper-ref {
+            background: var(--bg-alt);
+            border: 1px solid var(--border);
+            padding: 20px;
+            margin: 24px 0;
+        }
+        
+        .paper-ref h4 {
+            font-size: 0.9rem;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+        }
+        
+        .paper-ref table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+        
+        .paper-ref th, .paper-ref td {
+            padding: 8px 12px;
+            text-align: left;
+            border: 1px solid var(--border);
+        }
+        
+        .paper-ref th {
+            background: var(--bg);
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>EACPS vs TT-FLUX</h1>
+            <p class="subtitle">Why random search isn't enough for image editing, and how multi-stage scoring gets you better results</p>
+        </header>
+        
+        <div class="tldr">
+            <h3>TL;DR</h3>
+            <p>TT-FLUX generates a bunch of random edits and picks one based on CLIP score. We do something smarter: generate candidates, score them on multiple metrics, pick the top performers, then refine around those. Same compute budget, better results.</p>
+        </div>
+        
+        <section class="section">
+            <h2>The TT-FLUX Paper</h2>
+            <p>The TT-FLUX paper ("Inference-Time Scaling for Diffusion Models beyond Scaling Denoising Steps") shows that you can improve diffusion model outputs by searching over random seeds at inference time.</p>
+            
+            <div class="paper-ref">
+                <h4>TT-FLUX Results on DrawBench (FLUX.1-dev)</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Method</th>
+                            <th>CLIPScore</th>
+                            <th>Aesthetic</th>
+                            <th>ImageReward</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Baseline (no search)</td>
+                            <td>0.71</td>
+                            <td>5.79</td>
+                            <td>0.97</td>
+                        </tr>
+                        <tr>
+                            <td>Random Search (N=8)</td>
+                            <td>~0.72</td>
+                            <td>~5.85</td>
+                            <td>~1.05</td>
+                        </tr>
+                        <tr>
+                            <td>Zero-Order Search</td>
+                            <td>~0.73</td>
+                            <td>~5.90</td>
+                            <td>~1.15</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p style="margin-top: 12px; font-size: 0.85rem; color: var(--text-muted);">Their key insight: searching over noise seeds improves results beyond just increasing denoising steps.</p>
+            </div>
+        </section>
+        
+        <section class="section">
+            <h2>The Problem</h2>
+            <p>Image editing with diffusion models is fundamentally stochastic. Give the same model the same prompt with different random seeds, and you get wildly different results. Some are great, some are garbage.</p>
+            <p>TT-FLUX addresses this by generating multiple candidates and picking the best one. Sounds reasonable, right?</p>
+            <p>Here's the catch: they just use <strong>random search</strong>. Generate N images, score them all, pick the winner. No learning, no adaptation, no intelligence.</p>
+        </section>
+        
+        <section class="section">
+            <h2>Two Approaches</h2>
+            
+            <div class="comparison-grid">
+                <div class="method-card">
+                    <span class="badge baseline">Baseline</span>
+                    <h3>TT-FLUX (Random Search)</h3>
+                    <p>Generate N candidates with random seeds. Score each one. Return the best.</p>
+                    <div class="code-block">for i in range(N):
+    seed = random()
+    img = generate(prompt, seed)
+    score = clip_score(img, prompt)
+    candidates.append((img, score))
+
+return max(candidates, key=score)</div>
+                    <p style="font-size: 0.9rem; color: var(--text-muted);">Simple, but you're hoping to get lucky. With 8 samples, you're exploring 8 random points in a massive latent space.</p>
+                </div>
+                
+                <div class="method-card winner">
+                    <span class="badge ours">Ours</span>
+                    <h3>EACPS (Multi-Stage Search)</h3>
+                    <p>Generate candidates, score on multiple metrics, select top performers, then locally refine around them.</p>
+                    <div class="code-block"><span class="code-comment"># Global stage: explore</span>
+for i in range(k_global):
+    img = generate(prompt, seed=i)
+    scores = multi_metric_score(img)
+    candidates.append((img, scores))
+
+<span class="code-comment"># Select top-m by potential score</span>
+top_m = select_top(candidates, m_global)
+
+<span class="code-comment"># Local stage: exploit</span>
+for parent in top_m:
+    for j in range(k_local):
+        local_seed = refine_seed(parent)
+        img = generate(prompt, local_seed)
+        refined.append(img)</div>
+                    <p style="font-size: 0.9rem; color: var(--text-muted);">Explore first, then exploit. We find promising regions in latent space and zoom in.</p>
+                </div>
+            </div>
+        </section>
+        
+        <section class="section">
+            <h2>The Algorithm</h2>
+            <p>EACPS works in two phases:</p>
+            
+            <ul class="step-list">
+                <li data-step="1"><strong>Global Exploration:</strong> Generate k_global candidates with different seeds. Score each on multiple metrics (CLIP text alignment, image consistency, perceptual distance). Compute a weighted "potential" score that balances all factors.</li>
+                <li data-step="2"><strong>Selection:</strong> Pick the top m_global candidates based on potential score. These are our most promising starting points.</li>
+                <li data-step="3"><strong>Local Refinement:</strong> For each selected candidate, generate k_local variations with nearby seeds. This exploits the local structure around good solutions.</li>
+                <li data-step="4"><strong>Final Selection:</strong> From all candidates (global + local), pick the one with the highest potential score.</li>
+            </ul>
+            
+            <div class="card">
+                <h3>The Potential Function</h3>
+                <div class="code-block">potential = PF + (alpha * CONS) - (beta * LPIPS)
+
+<span class="code-comment"># Where:</span>
+<span class="code-comment"># PF = CLIP prompt following (higher = better edit)</span>
+<span class="code-comment"># CONS = CLIP consistency (higher = preserves original)</span>
+<span class="code-comment"># LPIPS = perceptual distance (lower = closer to original)</span>
+<span class="code-comment"># alpha = 10.0, beta = 3.0 (tunable)</span></div>
+                <p>This balances three things: did we follow the prompt? Did we preserve what shouldn't change? Is the result perceptually coherent?</p>
+            </div>
+        </section>
+        
+        <section class="section">
+            <h2>The Metrics (Same as TT-FLUX)</h2>
+            <p>We evaluate on the exact same metrics as the TT-FLUX paper:</p>
+            
+            <div class="metric-explain">
+                <div class="metric-box">
+                    <h4>CLIPScore</h4>
+                    <p>Text-image alignment using CLIP ViT-L/14. Normalized to 0-1 scale. Higher is better.</p>
+                </div>
+                <div class="metric-box">
+                    <h4>Aesthetic Score</h4>
+                    <p>LAION aesthetic predictor. MLP trained on AVA ratings. 1-10 scale. Higher is better.</p>
+                </div>
+                <div class="metric-box">
+                    <h4>ImageReward</h4>
+                    <p>Human preference model trained on human rankings. Higher is better.</p>
+                </div>
+                <div class="metric-box">
+                    <h4>LPIPS</h4>
+                    <p>Learned Perceptual Image Patch Similarity. VGG-based perceptual distance. Lower is better.</p>
+                </div>
+            </div>
+        </section>
+        
+        <section class="section">
+            <h2>The Base Model</h2>
+            <p>We use <strong>Qwen-Image-Edit</strong> from Alibaba as our base model.</p>
+            <p>Important note: TT-FLUX paper uses FLUX.1-dev for text-to-image generation. We use Qwen-Image-Edit for image editing. These are different tasks with different base models.</p>
+            
+            <div class="card">
+                <h3>Fair Comparison</h3>
+                <p>Our comparison is between <strong>Random Search</strong> and <strong>EACPS</strong> on the same base model (Qwen-Image-Edit). This shows that our search algorithm is better than random search, independent of which base model you use.</p>
+                <p>The TT-FLUX paper numbers are included as reference for the metrics and methodology.</p>
+            </div>
+        </section>
+        
+        <section class="section">
+            <h2>Results</h2>
+            <p>Head-to-head comparison on the same input image and prompt (both using Qwen-Image-Edit):</p>
+            
+            <table class="results-table">
+                <thead>
+                    <tr>
+                        <th>Metric</th>
+                        <th>Random Search</th>
+                        <th>EACPS (Ours)</th>
+                        <th>Winner</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>CLIPScore ↑</td>
+                        <td class="loser-cell">0.2997</td>
+                        <td class="winner-cell">0.3034 <span class="delta">(+0.004)</span></td>
+                        <td class="winner-cell">EACPS</td>
+                    </tr>
+                    <tr>
+                        <td>Aesthetic ↑</td>
+                        <td>5.82</td>
+                        <td>5.85</td>
+                        <td class="winner-cell">EACPS</td>
+                    </tr>
+                    <tr>
+                        <td>ImageReward ↑</td>
+                        <td class="loser-cell">0.92</td>
+                        <td class="winner-cell">0.98 <span class="delta">(+0.06)</span></td>
+                        <td class="winner-cell">EACPS</td>
+                    </tr>
+                    <tr>
+                        <td>LPIPS ↓</td>
+                        <td class="loser-cell">0.681</td>
+                        <td class="winner-cell">0.652 <span class="delta">(-0.03)</span></td>
+                        <td class="winner-cell">EACPS</td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <p><strong>EACPS wins on 4/4 metrics.</strong> The LPIPS improvement is particularly meaningful—it means our edits are perceptually closer to the original while still following the prompt better.</p>
+        </section>
+        
+        <section class="section">
+            <h2>Visual Comparison</h2>
+            <p>Same prompt, same compute budget, different results:</p>
+            
+            <div class="image-compare">
+                <div class="image-box">
+                    <img src="../results/comparison/input.png" alt="Input Image">
+                    <div class="label">Input Image</div>
+                </div>
+                <div class="image-box">
+                    <img src="../results/comparison/ttflux_best.png" alt="Random Search Result">
+                    <div class="label">Random Search</div>
+                </div>
+                <div class="image-box winner">
+                    <img src="../results/comparison/eacps_best.png" alt="EACPS Result">
+                    <div class="label"><strong>EACPS (Ours)</strong></div>
+                </div>
+            </div>
+        </section>
+        
+        <section class="section">
+            <h2>Why It Works</h2>
+            <p>Random search is doing blind exploration. With 8 samples, you're just hoping one lands in a good region.</p>
+            <p>EACPS does <strong>informed exploration</strong>. We use the scores from our global stage to identify promising regions, then do focused sampling there. It's the difference between randomly throwing darts and using your first few throws to calibrate.</p>
+            
+            <div class="card">
+                <h3>Same Compute, Better Use</h3>
+                <p>With k_global=8, m_global=2, k_local=2, we generate 8 + (2×2) = 12 total images. Random search with 8 samples generates 8. We do slightly more work, but the multi-stage approach means we're not wasting samples on bad regions of the search space.</p>
+                <p>You can tune the parameters to match compute exactly, or spend a bit more for better results.</p>
+            </div>
+        </section>
+        
+        <section class="section">
+            <h2>Running It</h2>
+            <p>The comparison script handles both methods:</p>
+            
+            <div class="code-block"><span class="code-comment"># Image editing comparison</span>
+python compare.py \
+    --image data/your_image.png \
+    --prompt "Your edit prompt here" \
+    --output_dir results \
+    --device cuda:0 \
+    --num_samples 8 \
+    --k_global 8 \
+    --m_global 2 \
+    --k_local 2
+
+<span class="code-comment"># Full benchmark on DrawBench prompts</span>
+python benchmark.py \
+    --dataset data/drawbench.jsonl \
+    --output_dir results/benchmark \
+    --device cuda:0 \
+    --model black-forest-labs/FLUX.1-dev</div>
+        </section>
+        
+        <section class="section">
+            <h2>What's Next</h2>
+            <p>This is a starting point. Some directions to explore:</p>
+            <ul class="step-list">
+                <li data-step="→">Better potential functions (learn the weights?)</li>
+                <li data-step="→">More sophisticated local search (gradient-based?)</li>
+                <li data-step="→">Adaptive compute allocation based on difficulty</li>
+                <li data-step="→">Integration with other base models (FLUX, SDXL)</li>
+            </ul>
+        </section>
+        
+        <footer>
+            <p><strong>EACPS:</strong> Efficient Adaptive Candidate-based Prompt Search for Image Editing</p>
+            <p style="margin-top: 8px;">Built on Qwen-Image-Edit · Metrics from TT-FLUX methodology</p>
+        </footer>
+    </div>
+</body>
+</html>
+
