@@ -66,8 +66,9 @@ def run_single_comparison(
     prompt = prompt_data["prompt"]
     task_output_dir = output_dir / prompt_id
     
+    compare_script = Path(__file__).parent / "compare.py"
     cmd = [
-        sys.executable, "compare.py",
+        sys.executable, str(compare_script),
         "--image", str(image_path),
         "--prompt", prompt,
         "--output_dir", str(task_output_dir),

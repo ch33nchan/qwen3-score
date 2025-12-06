@@ -1,0 +1,14 @@
+{
+  "id": "71650686",
+  "character_name": "Suraj",
+  "prompt": "Improve character consistency for Suraj, natural blending, same lighting, photorealistic",
+  "original_prompt": "check if there is character consistency in the image pairs",
+  "ttflux": {
+    "best_clip": 21.59951400756836,
+    "output": "character-annon/outputs/item_71650686/ttflux_best.png"
+  },
+  "eacps": {
+    "best_potential": 29.716869759373367,
+    "output": "character-annon/outputs/item_71650686/eacps_best.png"
+  }
+}

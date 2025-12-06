@@ -22,6 +22,27 @@ EACPS stands for **Efficient Adaptive Candidate-based Prompt Search**. It's a tw
 - **Adaptively refining** the most promising candidates
 - Balancing **prompt following**, **consistency**, and **perceptual quality**
 
+## Project Structure
+
+```
+qwen3-score/
+├── src/                    # Core source code
+│   ├── compare.py          # Head-to-head comparison script
+│   ├── batch_compare.py    # Batch evaluation across prompts
+│   ├── eacps.py            # Core EACPS algorithm
+│   ├── scorers.py          # Multi-metric scoring (CLIP, LPIPS, Aesthetic)
+│   └── setup_labelstudio.py # Label Studio task generation
+├── character-annon/        # Character inpainting pipeline
+│   ├── run_inpaint.py      # Main inpainting script
+│   └── README.md           # Character pipeline docs
+├── data/                   # Input images and prompts
+├── docs/                   # Documentation
+│   ├── eacps_blog.html     # Detailed blog-style writeup
+│   └── ttflux_reference.pdf # TT-FLUX paper reference
+├── experiments/            # Experimental results
+└── requirements.txt
+```
+
 ## Quick Start
 
 ### Installation
@@ -35,10 +56,10 @@ pip3 install -r requirements.txt
 ### Run a Single Comparison
 
 ```bash
-python compare.py \
+python src/compare.py \
   --image data/bear.png \
   --prompt "Add a colorful art board and paintbrush in the bear's hands" \
-  --output_dir results/comparison \
+  --output_dir experiments/comparison \
   --device cuda:0 \
   --num_samples 4 \
   --k_global 4 \
@@ -51,9 +72,9 @@ python compare.py \
 ### Run Batch Evaluation
 
 ```bash
-python batch_compare.py \
+python src/batch_compare.py \
   --prompts data/eval_prompts.jsonl \
-  --output_dir results/batch_eval \
+  --output_dir experiments/batch_eval \
   --devices cuda:0,cuda:1 \
   --num_samples 4 \
   --k_global 4 \
@@ -61,13 +82,19 @@ python batch_compare.py \
   --k_local 2
 ```
 
-## Project Structure
+### Character Inpainting (Label Studio Integration)
 
-- `compare.py` - Head-to-head comparison script
-- `batch_compare.py` - Batch evaluation across multiple prompts
-- `eacps.py` - Core EACPS algorithm implementation
-- `scorers.py` - Multi-metric scoring system (CLIP, LPIPS, Aesthetic)
-- `setup_labelstudio.py` - Generate Label Studio tasks for human evaluation
+```bash
+cd character-annon
+python run_inpaint.py \
+  --input project-label.json \
+  --output_dir outputs \
+  --device cuda:0 \
+  --method both \
+  --all
+```
+
+See [character-annon/README.md](character-annon/README.md) for full documentation.
 
 ## Results
 

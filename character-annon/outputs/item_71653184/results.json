@@ -1,0 +1,14 @@
+{
+  "id": "71653184",
+  "character_name": "Marie Flint",
+  "prompt": "Improve character consistency for Marie Flint, natural blending, same lighting, photorealistic",
+  "original_prompt": "check if there is character consistency in the image pairs",
+  "ttflux": {
+    "best_clip": 18.38985252380371,
+    "output": "character-annon/outputs/item_71653184/ttflux_best.png"
+  },
+  "eacps": {
+    "best_potential": 25.10386025905609,
+    "output": "character-annon/outputs/item_71653184/eacps_best.png"
+  }
+}
