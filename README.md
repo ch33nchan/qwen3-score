@@ -2,43 +2,40 @@
 
 ## Overview
 
-I've developed **EACPS (Efficient Adaptive Candidate-based Prompt Search)**, a multi-stage search algorithm that improves image editing quality by intelligently exploring and refining candidate edits. This project compares EACPS against **TT-FLUX (Test-Time FLUX)**, a state-of-the-art inference-time scaling method for diffusion models.
+**EACPS (Efficient Adaptive Candidate-based Prompt Search)** is a multi-stage search algorithm that improves image editing quality by intelligently exploring and refining candidate edits. This project compares EACPS against **TT-FLUX (Test-Time FLUX)**, using the actual TT-FLUX implementation from [sayakpaul/tt-scale-flux](https://github.com/sayakpaul/tt-scale-flux).
 
 ## What is EACPS?
 
-EACPS stands for **Efficient Adaptive Candidate-based Prompt Search**. It's a two-stage approach to finding better image edits:
+EACPS is a two-stage approach to finding better image edits:
 
 1. **Global Exploration**: Generate multiple candidates with diverse seeds
-2. **Scoring & Selection**: Evaluate candidates using multiple metrics (CLIP prompt following, consistency, LPIPS)
+2. **Scoring & Selection**: Evaluate candidates using LAION aesthetic score (same as TT-FLUX)
 3. **Local Refinement**: Generate refined versions of the top candidates
 4. **Final Selection**: Pick the best overall candidate
 
 ## How It Differs from TT-FLUX
 
-**TT-FLUX** (from the paper "Inference-Time Scaling for Diffusion Models beyond Scaling Denoising Steps") uses random search - it generates N candidates and picks the best one based on a single metric. While effective, it doesn't refine promising candidates.
+**TT-FLUX** (from the paper "Inference-Time Scaling for Diffusion Models beyond Scaling Denoising Steps") uses random search - it generates N candidates exponentially (2^round) and picks the best one based on a verifier score.
 
 **EACPS** improves upon this by:
-- Using **multi-metric scoring** (not just CLIP score)
-- **Adaptively refining** the most promising candidates
-- Balancing **prompt following**, **consistency**, and **perceptual quality**
+- **Adaptively refining** the most promising candidates instead of pure random search
+- More **compute-efficient** by focusing refinement on top candidates
+- Same scoring metrics (LAION aesthetic) for fair comparison
 
 ## Project Structure
 
 ```
 qwen3-score/
-├── src/                    # Core source code
-│   ├── compare.py          # Head-to-head comparison script
-│   ├── batch_compare.py    # Batch evaluation across prompts
+├── src/
+│   ├── ttflux/             # TT-FLUX integration (based on sayakpaul/tt-scale-flux)
+│   │   ├── pipeline.py     # TTFluxPipeline with random/zero-order search
+│   │   ├── verifiers.py    # LAION aesthetic, CLIP score verifiers
+│   │   └── verifier_prompt.txt
+│   ├── run_comparison.py   # Main comparison script (EACPS vs TT-FLUX)
 │   ├── eacps.py            # Core EACPS algorithm
-│   ├── scorers.py          # Multi-metric scoring (CLIP, LPIPS, Aesthetic)
-│   └── setup_labelstudio.py # Label Studio task generation
-├── character-annon/        # Character inpainting pipeline
-│   ├── run_inpaint.py      # Main inpainting script
-│   └── README.md           # Character pipeline docs
+│   ├── scorers.py          # Multi-metric scoring
+│   └── compare.py          # Legacy comparison script
 ├── data/                   # Input images and prompts
-├── docs/                   # Documentation
-│   ├── eacps_blog.html     # Detailed blog-style writeup
-│   └── ttflux_reference.pdf # TT-FLUX paper reference
 ├── experiments/            # Experimental results
 └── requirements.txt
 ```
@@ -48,66 +45,76 @@ qwen3-score/
 ### Installation
 
 ```bash
+# Create venv with uv (recommended)
+uv venv .venv
+source .venv/bin/activate
+uv pip install -r requirements.txt
+
+# Or with standard pip
 python3 -m venv .venv
 source .venv/bin/activate
 pip3 install -r requirements.txt
 ```
 
-### Run a Single Comparison
+### Run EACPS vs TT-FLUX Comparison (Image Generation)
 
 ```bash
-python src/compare.py \
+# Generate images with FLUX.1-dev and compare methods
+python src/run_comparison.py \
+  --prompt "a tiny astronaut hatching from an egg on the moon" \
+  --output_dir experiments/results/comparison \
+  --device cuda:0 \
+  --search_rounds 4 \
+  --k_global 8 \
+  --m_global 2 \
+  --k_local 4
+```
+
+### Run EACPS vs TT-FLUX Comparison (Image Editing with Qwen)
+
+```bash
+# Edit images with Qwen-Image-Edit and compare methods
+python src/run_comparison.py \
   --image data/bear.png \
   --prompt "Add a colorful art board and paintbrush in the bear's hands" \
-  --output_dir experiments/comparison \
+  --output_dir experiments/results/edit_comparison \
   --device cuda:0 \
-  --num_samples 4 \
-  --k_global 4 \
+  --mode edit \
+  --num_samples 8 \
+  --k_global 8 \
   --m_global 2 \
-  --k_local 2 \
-  --steps 50 \
-  --cfg 5.0
+  --k_local 4
 ```
 
-### Run Batch Evaluation
+### Parameters
 
-```bash
-python src/batch_compare.py \
-  --prompts data/eval_prompts.jsonl \
-  --output_dir experiments/batch_eval \
-  --devices cuda:0,cuda:1 \
-  --num_samples 4 \
-  --k_global 4 \
-  --m_global 2 \
-  --k_local 2
-```
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `--prompt` | required | Generation/edit prompt |
+| `--image` | None | Input image (enables edit mode) |
+| `--output_dir` | experiments/results/comparison | Output directory |
+| `--device` | cuda:0 | GPU device |
+| `--mode` | auto | generate or edit (auto-detected from --image) |
+| `--search_rounds` | 4 | TT-FLUX search rounds (2^round samples per round) |
+| `--num_samples` | 8 | TT-FLUX samples for edit mode |
+| `--k_global` | 8 | EACPS global exploration candidates |
+| `--m_global` | 2 | EACPS top candidates to refine |
+| `--k_local` | 4 | EACPS refinements per candidate |
+| `--steps` | 50 | Inference steps |
+| `--cfg` | 3.5/5.0 | Guidance scale (3.5 for FLUX, 5.0 for Qwen) |
 
-### Character Inpainting (Label Studio Integration)
+## TT-FLUX Integration
 
-```bash
-cd character-annon
-python run_inpaint.py \
-  --input project-label.json \
-  --output_dir outputs \
-  --device cuda:0 \
-  --method both \
-  --all
-```
+This project integrates the TT-FLUX algorithm from [sayakpaul/tt-scale-flux](https://github.com/sayakpaul/tt-scale-flux):
 
-See [character-annon/README.md](character-annon/README.md) for full documentation.
-
-## Results
-
-Based on my experiments across multiple image editing tasks, EACPS consistently outperforms TT-FLUX on:
-- **CLIP Score** (prompt following)
-- **Aesthetic Score** (visual quality)
-- **LPIPS** (perceptual similarity)
-
-See [`docs/eacps_blog.html`](docs/eacps_blog.html) for detailed analysis, explanations, and examples.
+- **Random Search**: Exponentially scales noise pool (2, 4, 8, 16...) per round
+- **Zero-Order Search**: Uses gradient-free optimization with neighbor generation
+- **Verifiers**: LAION Aesthetic Score (default), CLIP Score
 
 ## References
 
-- TT-FLUX Paper: "Inference-Time Scaling for Diffusion Models beyond Scaling Denoising Steps" (Ma et al., 2024)
+- TT-FLUX Paper: [Inference-Time Scaling for Diffusion Models beyond Scaling Denoising Steps](https://arxiv.org/abs/2501.09732) (Ma et al., 2025)
+- TT-FLUX Implementation: https://github.com/sayakpaul/tt-scale-flux
 - Qwen-Image-Edit: https://huggingface.co/Qwen/Qwen-Image-Edit
 
 ## License
