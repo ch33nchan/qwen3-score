@@ -86,15 +86,54 @@ def fetch_image(url: str, api_key: str = None) -> Image.Image:
     return Image.open(BytesIO(response.content)).convert("RGB")
 
 
-def fetch_task(api_key: str, project_id: int, task_id: int) -> LabelStudioTask:
+def fetch_task_by_id(api_key: str, task_id: int) -> Optional[Dict]:
+    """Fetch task by Label Studio task ID (direct API call)."""
     url = f"{LABEL_STUDIO_URL}/api/tasks/{task_id}"
     headers = {"Authorization": f"Token {api_key}"}
     response = requests.get(url, headers=headers, timeout=30)
+    if response.status_code == 404:
+        return None
     response.raise_for_status()
-    data = response.json()["data"]
+    return response.json()
+
+
+def fetch_task_by_data_id(api_key: str, project_id: int, data_id: str) -> Optional[Dict]:
+    """Fetch task by data.id field (requires searching through project tasks)."""
+    page = 1
+    page_size = 100
+    while True:
+        url = f"{LABEL_STUDIO_URL}/api/projects/{project_id}/tasks"
+        headers = {"Authorization": f"Token {api_key}"}
+        params = {"page_size": page_size, "page": page}
+        response = requests.get(url, headers=headers, params=params, timeout=60)
+        response.raise_for_status()
+        tasks = response.json()
+        if not tasks:
+            break
+        for task in tasks:
+            if task.get("data", {}).get("id") == data_id:
+                return task
+        if len(tasks) < page_size:
+            break
+        page += 1
+    return None
+
+
+def fetch_task(api_key: str, project_id: int, task_id: int) -> LabelStudioTask:
+    """Fetch task - tries task ID first, then searches by data.id."""
+    task_data = fetch_task_by_id(api_key, task_id)
+    
+    if task_data is None:
+        print(f"Task ID {task_id} not found directly, searching by data.id...")
+        task_data = fetch_task_by_data_id(api_key, project_id, str(task_id))
+        if task_data is None:
+            raise ValueError(f"Task with ID or data.id={task_id} not found in project {project_id}")
+    
+    data = task_data.get("data", task_data)
+    actual_task_id = task_data.get("id", task_id)
     
     return LabelStudioTask(
-        id=task_id,
+        id=actual_task_id,
         character_id=data.get("character_id", ""),
         character_name=data.get("character_name", ""),
         character_image_url=data.get("character_image_url", ""),
