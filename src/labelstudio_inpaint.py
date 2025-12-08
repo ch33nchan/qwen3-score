@@ -183,19 +183,40 @@ def composite_character_on_mask(
     mask_image: Image.Image,
 ) -> Image.Image:
     """
-    Composite character onto init image using mask.
-    The mask indicates where the character should be placed.
+    Composite character face onto init image using mask.
+    Intelligently crops and resizes character to fit mask region.
     """
+    import numpy as np
+    
     init_image = init_image.convert("RGBA")
     character_image = character_image.convert("RGBA")
     mask_image = mask_image.convert("L")
     
-    if character_image.size != init_image.size:
-        character_image = character_image.resize(init_image.size, Image.Resampling.LANCZOS)
     if mask_image.size != init_image.size:
         mask_image = mask_image.resize(init_image.size, Image.Resampling.LANCZOS)
     
-    result = Image.composite(character_image, init_image, mask_image)
+    # Find mask bounding box
+    mask_array = np.array(mask_image)
+    coords = np.column_stack(np.where(mask_array > 128))
+    if len(coords) == 0:
+        # No mask, return original
+        return init_image.convert("RGB")
+    
+    y_min, x_min = coords.min(axis=0)
+    y_max, x_max = coords.max(axis=0)
+    mask_width = x_max - x_min
+    mask_height = y_max - y_min
+    
+    # Crop character to upper region (face area) and resize to mask
+    char_height, char_width = character_image.size[1], character_image.size[0]
+    face_crop_height = int(char_height * 0.4)  # Top 40% contains face
+    character_face = character_image.crop((0, 0, char_width, face_crop_height))
+    character_face = character_face.resize((mask_width, mask_height), Image.Resampling.LANCZOS)
+    
+    # Paste character face at mask location
+    result = init_image.copy()
+    result.paste(character_face, (x_min, y_min), mask_image.crop((x_min, y_min, x_max, y_max)))
+    
     return result.convert("RGB")
 
 
