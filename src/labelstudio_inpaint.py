@@ -220,7 +220,9 @@ def generate_inpaint(
                         This helps preserve character appearance for replacement tasks.
         negative_prompt: Custom negative prompt to avoid unwanted features.
     """
-    generator = torch.Generator(device=device).manual_seed(seed)
+    # For multi-GPU device strings, use first GPU for generator
+    gen_device = device.split(",")[0] if "," in device else device
+    generator = torch.Generator(device=gen_device).manual_seed(seed)
     
     # Optionally pre-composite character onto masked region as starting point
     if use_compositing and character_image is not None:
