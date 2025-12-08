@@ -192,21 +192,38 @@ def generate_inpaint(
     pipe,
     init_image: Image.Image,
     mask_image: Image.Image,
+    character_image: Image.Image,
     prompt: str,
     seed: int,
     steps: int,
     cfg: float,
     device: str,
+    use_compositing: bool = True,
+    negative_prompt: str = "",
 ) -> Image.Image:
+    """
+    Generate inpaint with optional character reference pre-compositing.
+    
+    Args:
+        use_compositing: If True, pre-composite character onto masked region before editing.
+                        This helps preserve character appearance for replacement tasks.
+        negative_prompt: Custom negative prompt to avoid unwanted features.
+    """
     generator = torch.Generator(device=device).manual_seed(seed)
     
+    # Optionally pre-composite character onto masked region as starting point
+    if use_compositing and character_image is not None:
+        input_image = composite_character_on_mask(init_image, character_image, mask_image)
+    else:
+        input_image = init_image
+    
     result = pipe(
-        image=init_image,
+        image=input_image,
         prompt=prompt,
         generator=generator,
         num_inference_steps=steps,
         true_cfg_scale=cfg,
-        negative_prompt=" ",
+        negative_prompt=negative_prompt,
     )
     return result.images[0]
 
@@ -215,6 +232,7 @@ def run_ttflux_inpaint(
     pipe,
     init_image: Image.Image,
     mask_image: Image.Image,
+    character_image: Image.Image,
     prompt: str,
     verifier: LAIONAestheticVerifier,
     num_samples: int,
@@ -222,6 +240,8 @@ def run_ttflux_inpaint(
     cfg: float,
     device: str,
     output_dir: Path,
+    use_compositing: bool = True,
+    negative_prompt: str = "",
 ) -> Tuple[Dict, float]:
     print(f"\nTT-FLUX: Generating {num_samples} random candidates")
     results = []
@@ -229,7 +249,7 @@ def run_ttflux_inpaint(
     start_time = time.time()
     for i in tqdm(range(num_samples), desc="TT-FLUX"):
         seed = torch.randint(0, 2**31 - 1, (1,)).item()
-        edited = generate_inpaint(pipe, init_image, mask_image, prompt, seed, steps, cfg, device)
+        edited = generate_inpaint(pipe, init_image, mask_image, character_image, prompt, seed, steps, cfg, device, use_compositing, negative_prompt)
         
         inputs = verifier.prepare_inputs(images=[edited], prompts=prompt)
         scores = verifier.score(inputs)
@@ -251,6 +271,7 @@ def run_eacps_inpaint(
     pipe,
     init_image: Image.Image,
     mask_image: Image.Image,
+    character_image: Image.Image,
     prompt: str,
     verifier: LAIONAestheticVerifier,
     k_global: int,
@@ -260,6 +281,8 @@ def run_eacps_inpaint(
     cfg: float,
     device: str,
     output_dir: Path,
+    use_compositing: bool = True,
+    negative_prompt: str = "",
 ) -> Tuple[Dict, float]:
     print(f"\nEACPS Stage 1: Global exploration ({k_global} candidates)")
     global_results = []
@@ -267,7 +290,7 @@ def run_eacps_inpaint(
     start_time = time.time()
     for i in tqdm(range(k_global), desc="EACPS Global"):
         seed = torch.randint(0, 2**31 - 1, (1,)).item()
-        edited = generate_inpaint(pipe, init_image, mask_image, prompt, seed, steps, cfg, device)
+        edited = generate_inpaint(pipe, init_image, mask_image, character_image, prompt, seed, steps, cfg, device, use_compositing, negative_prompt)
         
         inputs = verifier.prepare_inputs(images=[edited], prompts=prompt)
         scores = verifier.score(inputs)
@@ -288,7 +311,7 @@ def run_eacps_inpaint(
         
         for j in tqdm(range(k_local), desc=f"Refine #{rank+1}", leave=False):
             refined_seed = base_seed + j + 1
-            edited = generate_inpaint(pipe, init_image, mask_image, prompt, refined_seed, steps, cfg, device)
+            edited = generate_inpaint(pipe, init_image, mask_image, character_image, prompt, refined_seed, steps, cfg, device, use_compositing, negative_prompt)
             
             inputs = verifier.prepare_inputs(images=[edited], prompts=prompt)
             scores = verifier.score(inputs)
@@ -319,6 +342,9 @@ def process_task(
     k_local: int = 4,
     steps: int = 50,
     cfg: float = 4.0,
+    use_compositing: bool = True,
+    custom_prompt: Optional[str] = None,
+    negative_prompt: Optional[str] = None,
 ) -> InpaintResult:
     task_dir = output_dir / f"task_{task.id}"
     task_dir.mkdir(parents=True, exist_ok=True)
@@ -338,7 +364,24 @@ def process_task(
     character_image.save(task_dir / "character_image.png")
     mask_image.save(task_dir / "mask_image.png")
     
-    edit_prompt = f"Replace the masked region with {task.character_name}. {task.prompt}"
+    # Save composited reference for debugging (if using compositing)
+    if use_compositing:
+        composited_ref = composite_character_on_mask(init_image, character_image, mask_image)
+        composited_ref.save(task_dir / "composited_reference.png")
+    
+    # Construct edit prompt based on strategy
+    if custom_prompt:
+        edit_prompt = custom_prompt
+    elif use_compositing:
+        # When compositing, focus on blending/refinement since character is already placed
+        edit_prompt = f"Refine and blend the character naturally into the scene. {task.prompt}"
+    else:
+        # When not compositing, need more explicit instruction
+        edit_prompt = f"Replace the masked region with {task.character_name}. {task.prompt}"
+    
+    # Set negative prompt
+    if negative_prompt is None:
+        negative_prompt = "distorted, deformed, wrong anatomy, poor quality, blurry"
     
     with open(task_dir / "task_info.json", "w") as f:
         json.dump(asdict(task), f, indent=2)
@@ -351,6 +394,7 @@ def process_task(
         pipe=pipe,
         init_image=init_image,
         mask_image=mask_image,
+        character_image=character_image,
         prompt=edit_prompt,
         verifier=verifier,
         num_samples=num_samples,
@@ -358,6 +402,8 @@ def process_task(
         cfg=cfg,
         device=device,
         output_dir=ttflux_dir,
+        use_compositing=use_compositing,
+        negative_prompt=negative_prompt,
     )
     
     eacps_dir = task_dir / "eacps"
@@ -366,6 +412,7 @@ def process_task(
         pipe=pipe,
         init_image=init_image,
         mask_image=mask_image,
+        character_image=character_image,
         prompt=edit_prompt,
         verifier=verifier,
         k_global=k_global,
@@ -375,6 +422,8 @@ def process_task(
         cfg=cfg,
         device=device,
         output_dir=eacps_dir,
+        use_compositing=use_compositing,
+        negative_prompt=negative_prompt,
     )
     
     total_time = time.time() - start_time
@@ -430,6 +479,9 @@ def main():
     parser.add_argument("--k_local", type=int, default=4, help="EACPS refinements each")
     parser.add_argument("--steps", type=int, default=50, help="Inference steps")
     parser.add_argument("--cfg", type=float, default=4.0, help="true_cfg_scale")
+    parser.add_argument("--use_compositing", type=bool, default=True, help="Pre-composite character before editing")
+    parser.add_argument("--custom_prompt", type=str, default=None, help="Override prompt construction")
+    parser.add_argument("--negative_prompt", type=str, default=None, help="Custom negative prompt")
     parser.add_argument("--list_tasks", action="store_true", help="List available tasks and exit")
     args = parser.parse_args()
     
@@ -484,6 +536,9 @@ def main():
             k_local=args.k_local,
             steps=args.steps,
             cfg=args.cfg,
+            use_compositing=args.use_compositing,
+            custom_prompt=args.custom_prompt,
+            negative_prompt=args.negative_prompt,
         )
         results.append(result)
     
