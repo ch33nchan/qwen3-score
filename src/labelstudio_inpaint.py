@@ -157,11 +157,22 @@ def load_qwen_pipeline(device: str):
     from diffusers import QwenImageEditPipeline
     
     print(f"Loading Qwen-Image-Edit pipeline on {device}...")
-    pipe = QwenImageEditPipeline.from_pretrained(
-        "Qwen/Qwen-Image-Edit",
-        torch_dtype=torch.bfloat16,
-    )
-    pipe.to(device)
+    
+    # Check for multi-GPU (comma-separated devices)
+    if "," in device:
+        print(f"Multi-GPU mode detected: using device_map='balanced'")
+        pipe = QwenImageEditPipeline.from_pretrained(
+            "Qwen/Qwen-Image-Edit",
+            torch_dtype=torch.bfloat16,
+            device_map="balanced",
+        )
+    else:
+        pipe = QwenImageEditPipeline.from_pretrained(
+            "Qwen/Qwen-Image-Edit",
+            torch_dtype=torch.bfloat16,
+        )
+        pipe.to(device)
+    
     pipe.set_progress_bar_config(disable=True)
     return pipe
 
