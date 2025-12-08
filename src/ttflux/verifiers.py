@@ -57,7 +57,11 @@ class LAIONAestheticVerifier(BaseVerifier):
 
     def __init__(self, device: str = "cuda", **kwargs):
         super().__init__(**kwargs)
-        self.device = device if torch.cuda.is_available() else "cpu"
+        # For multi-GPU strings like "cuda:0,1", use first GPU for verifier
+        if "," in device:
+            self.device = device.split(",")[0]
+        else:
+            self.device = device if torch.cuda.is_available() else "cpu"
         self.clip_model = CLIPModel.from_pretrained("openai/clip-vit-large-patch14").to(self.device)
         self.clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-large-patch14")
         self.aesthetic_model = self._load_aesthetic_model()
@@ -99,7 +103,11 @@ class CLIPScoreVerifier(BaseVerifier):
 
     def __init__(self, device: str = "cuda", **kwargs):
         super().__init__(**kwargs)
-        self.device = device if torch.cuda.is_available() else "cpu"
+        # For multi-GPU strings like "cuda:0,1", use first GPU for verifier
+        if "," in device:
+            self.device = device.split(",")[0]
+        else:
+            self.device = device if torch.cuda.is_available() else "cpu"
         self.clip_model = CLIPModel.from_pretrained("openai/clip-vit-large-patch14").to(self.device)
         self.clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-large-patch14")
 
