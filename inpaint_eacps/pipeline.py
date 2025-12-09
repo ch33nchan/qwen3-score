@@ -56,6 +56,42 @@ def _setup_flash_attn_mock():
 _setup_flash_attn_mock()
 
 
+def detect_face_region(image: Image.Image) -> tuple:
+    """
+    Detect face region in character image.
+    Returns (x, y, width, height) or None if no face found.
+    """
+    try:
+        import cv2
+        import numpy as np
+        
+        # Convert PIL to OpenCV
+        img_cv = cv2.cvtColor(np.array(image.convert("RGB")), cv2.COLOR_RGB2BGR)
+        gray = cv2.cvtColor(img_cv, cv2.COLOR_BGR2GRAY)
+        
+        # Use OpenCV's Haar Cascade for face detection
+        face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+        faces = face_cascade.detectMultiScale(gray, 1.1, 4, minSize=(30, 30))
+        
+        if len(faces) > 0:
+            # Take the largest face
+            largest_face = max(faces, key=lambda f: f[2] * f[3])
+            x, y, w, h = largest_face
+            
+            # Expand region slightly for context (20% padding)
+            padding = int(0.2 * max(w, h))
+            x = max(0, x - padding)
+            y = max(0, y - padding)
+            w = min(image.width - x, w + 2 * padding)
+            h = min(image.height - y, h + 2 * padding)
+            
+            return (x, y, w, h)
+    except:
+        pass
+    
+    return None
+
+
 def composite_character_face_on_mask(
     init_image: Image.Image,
     character_image: Image.Image,
@@ -63,7 +99,7 @@ def composite_character_face_on_mask(
 ) -> Image.Image:
     """
     Composite character face onto init image using mask.
-    Intelligently crops character to face region and fits to mask.
+    Uses face detection to extract the exact face region from character image.
     """
     init_image = init_image.convert("RGBA")
     character_image = character_image.convert("RGBA")
@@ -83,10 +119,25 @@ def composite_character_face_on_mask(
     mask_width = x_max - x_min
     mask_height = y_max - y_min
     
-    # Crop character to face region (top 40%) and resize to mask
-    char_width, char_height = character_image.size
-    face_crop_height = int(char_height * 0.4)
-    character_face = character_image.crop((0, 0, char_width, face_crop_height))
+    # Try to detect face in character image
+    face_region = detect_face_region(character_image)
+    
+    if face_region:
+        # Use detected face region
+        fx, fy, fw, fh = face_region
+        character_face = character_image.crop((fx, fy, fx + fw, fy + fh))
+        logger.info(f"Face detected at ({fx}, {fy}, {fw}, {fh})")
+    else:
+        # Fallback: use center-weighted crop favoring upper portion
+        char_width, char_height = character_image.size
+        # Take center 60% width, top 50% height
+        crop_width = int(char_width * 0.6)
+        crop_height = int(char_height * 0.5)
+        left = (char_width - crop_width) // 2
+        character_face = character_image.crop((left, 0, left + crop_width, crop_height))
+        logger.warning("No face detected, using fallback crop")
+    
+    # Resize to match mask dimensions
     character_face = character_face.resize((mask_width, mask_height), Image.Resampling.LANCZOS)
     
     # Paste character face at mask location
