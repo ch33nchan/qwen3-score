@@ -105,8 +105,8 @@ def parse_args() -> argparse.Namespace:
     
     # Label Studio settings
     parser.add_argument(
-        "--project_id", type=int, required=True,
-        help="Label Studio project ID"
+        "--project_id", type=int, nargs="+", required=True,
+        help="Label Studio project ID(s). Can specify multiple: --project_id 123 456 789"
     )
     parser.add_argument(
         "--api_key", type=str, 
@@ -234,9 +234,12 @@ def main():
     
     logger.info(f"Using devices: {available_devices}")
     
-    # Create config
+    # Handle single or multiple project IDs
+    project_ids = args.project_id if isinstance(args.project_id, list) else [args.project_id]
+    
+    # Create config (use first project_id for config, but we'll fetch from all)
     config = PipelineConfig.from_args(
-        project_id=args.project_id,
+        project_id=project_ids[0],
         api_key=args.api_key,
         url=args.url,
         output_dir=args.output_dir,
@@ -254,22 +257,30 @@ def main():
     cache_dir.mkdir(parents=True, exist_ok=True)
     
     logger.info(f"Label Studio: {config.label_studio.url}")
-    logger.info(f"Project ID: {config.label_studio.project_id}")
+    logger.info(f"Project IDs: {project_ids}")
     logger.info(f"Devices: {config.gpu.devices}")
     logger.info(f"EACPS: k_global={config.eacps.k_global}, m_global={config.eacps.m_global}, k_local={config.eacps.k_local}")
     logger.info(f"Output: {output_dir}")
     
-    # Fetch tasks from Label Studio
+    # Fetch tasks from Label Studio (from all specified projects)
     logger.info("Fetching tasks from Label Studio...")
     client = LabelStudioClient(config.label_studio.url, config.label_studio.api_key)
     
-    try:
-        tasks = client.fetch_project_tasks(config.label_studio.project_id)
-    except Exception as e:
-        logger.error(f"Error fetching tasks: {e}")
+    tasks = []
+    for pid in project_ids:
+        try:
+            logger.info(f"  Fetching project {pid}...")
+            project_tasks = client.fetch_project_tasks(pid)
+            logger.info(f"    Found {len(project_tasks)} tasks")
+            tasks.extend(project_tasks)
+        except Exception as e:
+            logger.error(f"    Error fetching project {pid}: {e}")
+    
+    if not tasks:
+        logger.error("No tasks found in any project")
         sys.exit(1)
     
-    logger.info(f"Found {len(tasks)} unique tasks")
+    logger.info(f"Total: {len(tasks)} unique tasks from {len(project_ids)} project(s)")
     
     # Log unique characters
     unique_chars = set(t.character_name for t in tasks)
@@ -339,7 +350,7 @@ def main():
     
     # Save summary
     summary = {
-        "project_id": config.label_studio.project_id,
+        "project_ids": project_ids,
         "total_tasks": len(loaded_tasks),
         "successful": sum(1 for r in results if r.success),
         "failed": sum(1 for r in results if not r.success),
