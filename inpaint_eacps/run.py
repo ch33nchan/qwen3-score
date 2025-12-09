@@ -171,6 +171,31 @@ def main():
     logger.info(f"Scores: {result['best_scores']}")
     logger.info(f"Elapsed: {elapsed}")
     logger.info(f"Output: {result.get('output_dir', output_dir)}")
+    
+    # Auto-push to git
+    try:
+        import subprocess
+        repo_root = Path(__file__).parent.parent
+        
+        logger.info("Pushing results to git...")
+        subprocess.run(
+            ["git", "add", str(output_dir / f"task_{result['task_id']}")],
+            cwd=repo_root,
+            check=False,
+        )
+        subprocess.run(
+            ["git", "commit", "-m", f"Inpaint EACPS result: task {result['task_id']} ({result['character_name']})"],
+            cwd=repo_root,
+            check=False,
+        )
+        subprocess.run(
+            ["git", "push", "origin", "main"],
+            cwd=repo_root,
+            check=False,
+        )
+        logger.info("Git push completed")
+    except Exception as e:
+        logger.warning(f"Git push failed (non-critical): {e}")
 
 
 if __name__ == "__main__":
