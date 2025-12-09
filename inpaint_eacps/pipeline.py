@@ -84,10 +84,22 @@ def _init_insightface():
         
         if not os.path.exists(model_path):
             logger.error(f"Face swapper model not found at {model_path}")
-            logger.error("Download from: https://huggingface.co/deepinsight/inswapper/resolve/main/inswapper_128.onnx")
+            logger.error("Download manually:")
+            logger.error("  1. Go to https://huggingface.co/ezioruan/inswapper_128.onnx/tree/main")
+            logger.error("  2. Download inswapper_128.onnx")
+            logger.error(f"  3. Place at {model_path}")
             _FACE_SWAPPER = None
         else:
-            _FACE_SWAPPER = insightface.model_zoo.get_model(model_path)
+            file_size = os.path.getsize(model_path)
+            if file_size < 1_000_000:
+                logger.error(f"Face swapper model at {model_path} is too small ({file_size} bytes) - likely corrupt")
+                logger.error("Download manually:")
+                logger.error("  1. Go to https://huggingface.co/ezioruan/inswapper_128.onnx/tree/main")
+                logger.error("  2. Download inswapper_128.onnx (~500MB)")
+                logger.error(f"  3. Place at {model_path}")
+                _FACE_SWAPPER = None
+            else:
+                _FACE_SWAPPER = insightface.model_zoo.get_model(model_path)
         
         logger.info("InsightFace models loaded")
         return _FACE_ANALYZER, _FACE_SWAPPER
