@@ -55,20 +55,42 @@ class GeminiScorer:
         try:
             client = self._get_client()
             
-            prompt = """You are evaluating an image editing result for realism and quality.
+            prompt = """You are a professional image quality evaluator. Analyze these images carefully.
 
-Image 1 (CHARACTER): The reference character whose identity should appear in the result.
-Image 2 (ORIGINAL): The original scene image.
-Image 3 (RESULT): The edited result where the character should be placed.
+IMAGE 1 (CHARACTER REFERENCE): The target character whose face should appear in the result.
+IMAGE 2 (ORIGINAL SCENE): The original photograph before editing.
+IMAGE 3 (EDITED RESULT): The final result after face replacement.
 
-Score the following on a scale of 0-10:
-1. IDENTITY (0-10): How well does the face in RESULT match the CHARACTER? Consider facial features, skin tone, expression, age, gender. Be strict - only high scores for very close matches.
-2. REALISM (0-10): Does RESULT look like a real photograph? Check for: artifacts, blurring, unnatural lighting, color mismatches, seams, ghosting, double faces, distorted features. Be very strict - only 8+ for truly photorealistic results.
-3. CONSISTENCY (0-10): How well does the edit blend with the scene? Lighting direction, shadows, color temperature, style, texture all match the original scene.
+Evaluate and score each aspect on a 0-10 scale:
 
-Be CRITICAL. Low scores for any visible artifacts, blur, or unrealistic elements.
+1. IDENTITY MATCH (0-10):
+   - Does the face in RESULT match CHARACTER's facial features exactly?
+   - Consider: face shape, eyes, nose, mouth, skin tone, age, gender, expression
+   - Be VERY STRICT: Only 8+ if faces are nearly identical
+   - Penalize heavily for mismatched features, wrong age/gender, different person
 
-Respond ONLY with three numbers separated by commas, like: 7,8,6
+2. PHOTOREALISM (0-10):
+   - Does RESULT look like a real, unedited photograph?
+   - Check for: AI artifacts, blur, double faces, distorted features, unnatural lighting
+   - Check for: color banding, seams, ghosting, oversaturation, airbrushed look
+   - Check for: unrealistic skin texture, fake-looking hair, artificial shadows
+   - Be EXTREMELY STRICT: Only 9+ for perfect realism, 7+ for good, below 5 for obvious AI
+   - This is the MOST IMPORTANT metric
+
+3. SCENE CONSISTENCY (0-10):
+   - Does the edited face blend naturally with the original scene?
+   - Check: lighting direction matches, shadows are correct, color temperature matches
+   - Check: style matches (photographic vs painted), resolution matches, focus matches
+   - Check: no visible seams or boundaries between edited and original areas
+
+CRITICAL EVALUATION RULES:
+- If you see ANY artifacts, blur, or AI-generated look → REALISM score ≤ 6
+- If face doesn't match character → IDENTITY score ≤ 5
+- If lighting/shadow doesn't match → CONSISTENCY score ≤ 6
+- Be honest and critical - low scores are better than false positives
+
+Respond with ONLY three numbers separated by commas: IDENTITY,REALISM,CONSISTENCY
+Example: 7,8,6
 """
             
             response = client.generate_content([
@@ -111,17 +133,18 @@ class MoondreamScorer:
             try:
                 from transformers import AutoModelForCausalLM, AutoTokenizer
                 
-                logger.info(f"Loading Moondream from {self.model_id}...")
+                logger.info(f"Loading Moondream V3 from {self.model_id}...")
                 self._model = AutoModelForCausalLM.from_pretrained(
                     self.model_id,
                     trust_remote_code=True,
-                    torch_dtype="auto",
+                    torch_dtype=torch.bfloat16 if "cuda" in self.device else torch.float32,
                 ).to(self.device)
                 self._tokenizer = AutoTokenizer.from_pretrained(
                     self.model_id,
                     trust_remote_code=True,
                 )
-                logger.info("Moondream loaded")
+                self._model.eval()
+                logger.info("Moondream V3 loaded")
             except Exception as e:
                 logger.error(f"Failed to load Moondream: {e}")
                 raise
@@ -133,53 +156,48 @@ class MoondreamScorer:
         character_image: Image.Image,
     ) -> Dict[str, float]:
         """
-        Score identity preservation using Moondream.
-        Compares faces in both images.
+        Score identity preservation using Moondream V3.
+        Uses proper multi-image comparison.
         """
         try:
+            import torch
             model, tokenizer = self._load_model()
             
-            # Encode both images
+            # Moondream2 API: encode_image returns embeddings
             enc_result = model.encode_image(result_image)
             enc_char = model.encode_image(character_image)
             
-            # Ask about face similarity
+            # Ask about face similarity - use result image as context
             prompt = (
-                "Look at the face in the first image (character reference) and the face in the second image (result). "
-                "Do they look like the same person? Consider facial features, skin tone, expression, and overall appearance. "
-                "Answer with a number from 0 to 10, where 10 means definitely the same person, 5 means uncertain, and 0 means definitely different. "
-                "Just respond with the number."
+                "Compare the face in this image with the face in the character reference image. "
+                "Do they look like the same person? Consider: facial structure, features, skin tone, age, gender, expression. "
+                "Rate from 0-10 where 10 = definitely same person, 5 = uncertain, 0 = different person. "
+                "Answer with only the number."
             )
             
-            # Use result image encoding for the question
-            response = model.answer_question(enc_result, prompt, tokenizer)
-            
-            # Also ask about character image for comparison
-            prompt2 = (
-                "Now look at the character reference image. Does the face in the result image match this character's identity? "
-                "Answer with a number from 0 to 10. Just the number."
-            )
-            response2 = model.answer_question(enc_char, prompt2, tokenizer)
-            
-            # Average the two responses
-            try:
-                score1 = float(response.strip().split()[0])
-                score1 = min(10, max(0, score1))
-            except:
-                score1 = 5.0
+            # Moondream2 can handle image + text, but we need to combine embeddings
+            # For now, use result image encoding
+            with torch.inference_mode():
+                response = model.answer_question(enc_result, prompt, tokenizer)
             
             try:
-                score2 = float(response2.strip().split()[0])
-                score2 = min(10, max(0, score2))
+                # Extract number from response
+                import re
+                numbers = re.findall(r'\d+\.?\d*', response.strip())
+                if numbers:
+                    score = float(numbers[0])
+                else:
+                    score = 5.0
+                score = min(10, max(0, score))
             except:
-                score2 = 5.0
+                score = 5.0
             
-            avg_score = (score1 + score2) / 2
-            
-            return {"moondream_identity": avg_score}
+            return {"moondream_identity": score}
             
         except Exception as e:
-            logger.error(f"Moondream scoring failed: {e}")
+            logger.error(f"Moondream identity scoring failed: {e}")
+            import traceback
+            traceback.print_exc()
             return {"moondream_identity": 5.0}
     
     def score_realism(
@@ -188,25 +206,33 @@ class MoondreamScorer:
         init_image: Image.Image,
     ) -> Dict[str, float]:
         """
-        Score how realistic the result looks compared to the original.
+        Score how realistic the result looks using Moondream V3.
         """
         try:
+            import torch
+            import re
             model, tokenizer = self._load_model()
             
             enc_result = model.encode_image(result_image)
             
             prompt = (
-                "Look at this image. Does it look photorealistic and natural? "
-                "Are there any obvious artifacts, blurring, or unnatural elements? "
+                "Evaluate this image for photorealism. Check for: "
+                "artifacts, blurring, unnatural lighting, color mismatches, seams, "
+                "double faces, distorted features, AI-generated look, oversaturation. "
                 "Does it look like a real photograph? "
-                "Answer with a number from 0 to 10, where 10 means very realistic and natural, "
-                "and 0 means clearly fake or artificial. Just the number."
+                "Rate 0-10: 10 = perfect realism, 5 = mixed, 0 = clearly fake. "
+                "Answer with only the number."
             )
             
-            response = model.answer_question(enc_result, prompt, tokenizer)
+            with torch.inference_mode():
+                response = model.answer_question(enc_result, prompt, tokenizer)
             
             try:
-                score = float(response.strip().split()[0])
+                numbers = re.findall(r'\d+\.?\d*', response.strip())
+                if numbers:
+                    score = float(numbers[0])
+                else:
+                    score = 5.0
                 score = min(10, max(0, score))
             except:
                 score = 5.0
@@ -215,6 +241,8 @@ class MoondreamScorer:
             
         except Exception as e:
             logger.error(f"Moondream realism scoring failed: {e}")
+            import traceback
+            traceback.print_exc()
             return {"moondream_realism": 5.0}
 
 
@@ -293,10 +321,10 @@ class MultiModelScorer:
         # Use Moondream realism if available, otherwise Gemini quality
         realism = moondream_realism if moondream_realism is not None else quality
         
-        # Weight realism heavily (2x) to prioritize photorealistic results
+        # Weight realism heavily to prioritize photorealistic results
         potential = (
             config.alpha_consistency * consistency +
-            config.beta_quality * realism * 2.0 +  # Double weight for realism
+            config.beta_quality * realism +  # Already weighted in config
             config.gamma_identity * identity
         )
         

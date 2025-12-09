@@ -91,6 +91,7 @@ class QwenEditPipeline:
         seed: int,
         num_steps: int = 50,
         guidance_scale: float = 5.0,
+        negative_prompt: str = "",
     ) -> Image.Image:
         """Generate a single edit."""
         pipe = self._load()
@@ -106,6 +107,7 @@ class QwenEditPipeline:
                 prompt=prompt,
                 generator=generator,
                 true_cfg_scale=guidance_scale,
+                negative_prompt=negative_prompt if negative_prompt else None,
                 num_inference_steps=num_steps,
                 height=height,
                 width=width,
@@ -138,12 +140,12 @@ def create_inpaint_prompt(character_name: str) -> str:
     """Create prompt for face inpainting with emphasis on realism."""
     return (
         f"Replace the masked face region with {character_name}'s face. "
-        f"CRITICAL: The result must look like a real photograph. "
-        f"Match the exact facial features, skin tone, expression, and age from the character reference. "
-        f"Maintain perfect lighting consistency with the scene - shadows, highlights, and color temperature must match. "
-        f"No artifacts, blurring, or unnatural elements. "
-        f"Seamless integration - the face should look like it was always part of the original photograph. "
-        f"Photorealistic, high quality, natural, realistic."
+        f"Match the exact facial features, skin tone, expression, age, and gender from the character reference. "
+        f"Maintain perfect lighting consistency - shadows, highlights, and color temperature must match the scene exactly. "
+        f"The result must look like an unedited, real photograph. "
+        f"Natural skin texture, realistic hair, proper shadows. "
+        f"Seamless integration with no visible seams or boundaries. "
+        f"RAW photo, DSLR quality, 8k uhd, natural skin pores, detailed imperfections, unedited, no retouching."
     )
 
 
@@ -186,6 +188,7 @@ def run_eacps_inpaint(
             seed=seed,
             num_steps=model.num_inference_steps,
             guidance_scale=model.guidance_scale,
+            negative_prompt=model.negative_prompt,
         )
         
         # Blend with mask
@@ -233,6 +236,7 @@ def run_eacps_inpaint(
                 seed=child_seed,
                 num_steps=model.num_inference_steps,
                 guidance_scale=model.guidance_scale,
+                negative_prompt=model.negative_prompt,
             )
             
             result = blend_with_mask(raw_result, init_image, mask_image)
