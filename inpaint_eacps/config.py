@@ -24,8 +24,8 @@ class ModelConfig:
     """Model configuration."""
     # Qwen Edit
     qwen_model_id: str = "Qwen/Qwen-Image-Edit"
-    num_inference_steps: int = 50
-    guidance_scale: float = 5.0
+    num_inference_steps: int = 75  # Increased for better quality
+    guidance_scale: float = 7.5  # Increased for better prompt adherence
     
     # Gemini
     gemini_api_key: str = field(default_factory=lambda: os.getenv("GEMINI_API_KEY", ""))

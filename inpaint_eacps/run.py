@@ -87,6 +87,12 @@ def parse_args():
     parser.add_argument("--m_global", type=int, default=2)
     parser.add_argument("--k_local", type=int, default=2)
     
+    # Model settings
+    parser.add_argument("--use_moondream", action="store_true", default=True,
+                        help="Use Moondream for realism scoring (default: True)")
+    parser.add_argument("--no_moondream", dest="use_moondream", action="store_false",
+                        help="Disable Moondream (faster but less accurate)")
+    
     return parser.parse_args()
 
 
@@ -156,6 +162,7 @@ def main():
         task_id=task_data["id"],
         config=config,
         output_dir=output_dir,
+        use_moondream=args.use_moondream,
     )
     
     elapsed = datetime.now() - start_time

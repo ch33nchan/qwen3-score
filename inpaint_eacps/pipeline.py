@@ -135,11 +135,15 @@ def blend_with_mask(
 
 
 def create_inpaint_prompt(character_name: str) -> str:
-    """Create prompt for face inpainting."""
+    """Create prompt for face inpainting with emphasis on realism."""
     return (
-        f"Replace the masked face with {character_name}'s face. "
-        f"Maintain natural lighting, skin tone, and expression. "
-        f"Photorealistic, seamless blend with the scene."
+        f"Replace the masked face region with {character_name}'s face. "
+        f"CRITICAL: The result must look like a real photograph. "
+        f"Match the exact facial features, skin tone, expression, and age from the character reference. "
+        f"Maintain perfect lighting consistency with the scene - shadows, highlights, and color temperature must match. "
+        f"No artifacts, blurring, or unnatural elements. "
+        f"Seamless integration - the face should look like it was always part of the original photograph. "
+        f"Photorealistic, high quality, natural, realistic."
     )
 
 
@@ -267,6 +271,7 @@ def process_task(
     task_id: str,
     config: PipelineConfig,
     output_dir: Optional[Path] = None,
+    use_moondream: bool = True,
 ) -> Dict[str, Any]:
     """
     Process a single inpainting task.
@@ -276,14 +281,14 @@ def process_task(
     # Initialize pipeline
     qwen_pipe = QwenEditPipeline(config.model.qwen_model_id, config.device)
     
-    # Initialize scorer
+    # Initialize scorer with Moondream enabled for better realism scoring
     scorer = MultiModelScorer(
         gemini_api_key=config.model.gemini_api_key,
         gemini_model=config.model.gemini_model,
         moondream_model_id=config.model.moondream_model_id,
         device=config.device,
         use_gemini=bool(config.model.gemini_api_key),
-        use_moondream=False,  # Disabled for speed
+        use_moondream=use_moondream,  # Enabled for better realism and identity scoring
     )
     
     # Run EACPS

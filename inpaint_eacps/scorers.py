@@ -55,16 +55,18 @@ class GeminiScorer:
         try:
             client = self._get_client()
             
-            prompt = """You are evaluating an image editing result. 
-            
+            prompt = """You are evaluating an image editing result for realism and quality.
+
 Image 1 (CHARACTER): The reference character whose identity should appear in the result.
 Image 2 (ORIGINAL): The original scene image.
 Image 3 (RESULT): The edited result where the character should be placed.
 
 Score the following on a scale of 0-10:
-1. IDENTITY (0-10): How well does the face in RESULT match the CHARACTER? Consider facial features, skin tone, expression.
-2. QUALITY (0-10): Overall image quality. Is it photorealistic? Any artifacts, blurring, or unnatural elements?
-3. CONSISTENCY (0-10): How well does the edit blend with the scene? Lighting, style, composition consistency.
+1. IDENTITY (0-10): How well does the face in RESULT match the CHARACTER? Consider facial features, skin tone, expression, age, gender. Be strict - only high scores for very close matches.
+2. REALISM (0-10): Does RESULT look like a real photograph? Check for: artifacts, blurring, unnatural lighting, color mismatches, seams, ghosting, double faces, distorted features. Be very strict - only 8+ for truly photorealistic results.
+3. CONSISTENCY (0-10): How well does the edit blend with the scene? Lighting direction, shadows, color temperature, style, texture all match the original scene.
+
+Be CRITICAL. Low scores for any visible artifacts, blur, or unrealistic elements.
 
 Respond ONLY with three numbers separated by commas, like: 7,8,6
 """
@@ -132,18 +134,75 @@ class MoondreamScorer:
     ) -> Dict[str, float]:
         """
         Score identity preservation using Moondream.
+        Compares faces in both images.
         """
         try:
             model, tokenizer = self._load_model()
             
-            # Encode images
+            # Encode both images
             enc_result = model.encode_image(result_image)
             enc_char = model.encode_image(character_image)
             
-            # Ask about identity match
-            prompt = "Do the faces in these two images look like the same person? Answer with a confidence score from 0 to 10, where 10 means definitely the same person. Just respond with the number."
+            # Ask about face similarity
+            prompt = (
+                "Look at the face in the first image (character reference) and the face in the second image (result). "
+                "Do they look like the same person? Consider facial features, skin tone, expression, and overall appearance. "
+                "Answer with a number from 0 to 10, where 10 means definitely the same person, 5 means uncertain, and 0 means definitely different. "
+                "Just respond with the number."
+            )
             
-            # This is a simplified approach - in practice you'd need to handle multi-image input
+            # Use result image encoding for the question
+            response = model.answer_question(enc_result, prompt, tokenizer)
+            
+            # Also ask about character image for comparison
+            prompt2 = (
+                "Now look at the character reference image. Does the face in the result image match this character's identity? "
+                "Answer with a number from 0 to 10. Just the number."
+            )
+            response2 = model.answer_question(enc_char, prompt2, tokenizer)
+            
+            # Average the two responses
+            try:
+                score1 = float(response.strip().split()[0])
+                score1 = min(10, max(0, score1))
+            except:
+                score1 = 5.0
+            
+            try:
+                score2 = float(response2.strip().split()[0])
+                score2 = min(10, max(0, score2))
+            except:
+                score2 = 5.0
+            
+            avg_score = (score1 + score2) / 2
+            
+            return {"moondream_identity": avg_score}
+            
+        except Exception as e:
+            logger.error(f"Moondream scoring failed: {e}")
+            return {"moondream_identity": 5.0}
+    
+    def score_realism(
+        self,
+        result_image: Image.Image,
+        init_image: Image.Image,
+    ) -> Dict[str, float]:
+        """
+        Score how realistic the result looks compared to the original.
+        """
+        try:
+            model, tokenizer = self._load_model()
+            
+            enc_result = model.encode_image(result_image)
+            
+            prompt = (
+                "Look at this image. Does it look photorealistic and natural? "
+                "Are there any obvious artifacts, blurring, or unnatural elements? "
+                "Does it look like a real photograph? "
+                "Answer with a number from 0 to 10, where 10 means very realistic and natural, "
+                "and 0 means clearly fake or artificial. Just the number."
+            )
+            
             response = model.answer_question(enc_result, prompt, tokenizer)
             
             try:
@@ -152,11 +211,11 @@ class MoondreamScorer:
             except:
                 score = 5.0
             
-            return {"moondream_identity": score}
+            return {"moondream_realism": score}
             
         except Exception as e:
-            logger.error(f"Moondream scoring failed: {e}")
-            return {"moondream_identity": 5.0}
+            logger.error(f"Moondream realism scoring failed: {e}")
+            return {"moondream_realism": 5.0}
 
 
 class MultiModelScorer:
@@ -169,7 +228,7 @@ class MultiModelScorer:
         moondream_model_id: str = "vikhyatk/moondream2",
         device: str = "cuda",
         use_gemini: bool = True,
-        use_moondream: bool = False,  # Disabled by default (slow)
+        use_moondream: bool = True,  # Enabled for better scoring
     ):
         self.use_gemini = use_gemini and bool(gemini_api_key)
         self.use_moondream = use_moondream
@@ -200,8 +259,13 @@ class MultiModelScorer:
             scores.update({f"gemini_{k}": v for k, v in gemini_scores.items()})
         
         if self.moondream:
-            moondream_scores = self.moondream.score_identity(result_image, character_image)
-            scores.update(moondream_scores)
+            # Identity score
+            moondream_identity = self.moondream.score_identity(result_image, character_image)
+            scores.update(moondream_identity)
+            
+            # Realism score
+            moondream_realism = self.moondream.score_realism(result_image, init_image)
+            scores.update(moondream_realism)
         
         return scores
     
@@ -209,20 +273,30 @@ class MultiModelScorer:
         """
         Compute potential score from multi-model scores.
         
-        potential = α*consistency + β*quality + γ*identity
+        potential = α*consistency + β*realism + γ*identity
+        
+        Realism is weighted heavily (2x) to prioritize photorealistic results.
         """
         # Use Gemini scores if available
         identity = scores.get("gemini_identity", 5.0)
         quality = scores.get("gemini_quality", 5.0)
         consistency = scores.get("gemini_consistency", 5.0)
         
-        # Boost from Moondream if available
-        if "moondream_identity" in scores:
-            identity = (identity + scores["moondream_identity"]) / 2
+        # Get Moondream scores
+        moondream_identity = scores.get("moondream_identity", None)
+        moondream_realism = scores.get("moondream_realism", None)
         
+        # Combine identity scores (average Gemini + Moondream)
+        if moondream_identity is not None:
+            identity = (identity + moondream_identity) / 2
+        
+        # Use Moondream realism if available, otherwise Gemini quality
+        realism = moondream_realism if moondream_realism is not None else quality
+        
+        # Weight realism heavily (2x) to prioritize photorealistic results
         potential = (
             config.alpha_consistency * consistency +
-            config.beta_quality * quality +
+            config.beta_quality * realism * 2.0 +  # Double weight for realism
             config.gamma_identity * identity
         )
         
