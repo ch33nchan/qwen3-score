@@ -2,11 +2,15 @@
 Label Studio API client for fetching project tasks.
 """
 import requests
+import hashlib
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Set
 from PIL import Image
 from io import BytesIO
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -19,7 +23,7 @@ class Task:
     init_image_url: str
     mask_image_url: str
     prompt: str
-    image_url: Optional[str] = None  # Additional reference image if present
+    image_url: Optional[str] = None
     
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "Task":
@@ -45,6 +49,11 @@ class Task:
             self.init_image_url and 
             self.mask_image_url
         )
+    
+    def get_unique_key(self) -> str:
+        """Get unique key based on image URLs (for deduplication)."""
+        key = f"{self.init_image_url}|{self.mask_image_url}|{self.character_image_url}"
+        return hashlib.md5(key.encode()).hexdigest()
 
 
 class LabelStudioClient:
@@ -59,11 +68,22 @@ class LabelStudioClient:
             "Content-Type": "application/json",
         })
     
-    def fetch_project_tasks(self, project_id: int) -> List[Task]:
-        """Fetch all tasks from a Label Studio project."""
+    def fetch_project_tasks(self, project_id: int, deduplicate: bool = True) -> List[Task]:
+        """
+        Fetch all tasks from a Label Studio project.
+        
+        Args:
+            project_id: Label Studio project ID
+            deduplicate: If True, remove tasks with duplicate image combinations
+        
+        Returns:
+            List of unique tasks
+        """
         endpoint = f"{self.url}/api/projects/{project_id}/tasks"
-        tasks = []
+        all_tasks = []
         page = 1
+        
+        logger.info(f"Fetching tasks from project {project_id}...")
         
         while True:
             response = self.session.get(
@@ -85,13 +105,36 @@ class LabelStudioClient:
             for item in items:
                 task = Task.from_dict(item)
                 if task.is_valid():
-                    tasks.append(task)
+                    all_tasks.append(task)
             
-            if len(tasks) >= total or not items:
+            logger.info(f"  Page {page}: {len(items)} items, {len(all_tasks)} valid tasks so far")
+            
+            if len(all_tasks) >= total or not items:
                 break
             page += 1
         
-        return tasks
+        logger.info(f"Fetched {len(all_tasks)} valid tasks total")
+        
+        # Deduplicate
+        if deduplicate:
+            seen_keys: Set[str] = set()
+            unique_tasks: List[Task] = []
+            
+            for task in all_tasks:
+                key = task.get_unique_key()
+                if key not in seen_keys:
+                    seen_keys.add(key)
+                    unique_tasks.append(task)
+                else:
+                    logger.debug(f"  Skipping duplicate task {task.id}")
+            
+            duplicates_removed = len(all_tasks) - len(unique_tasks)
+            if duplicates_removed > 0:
+                logger.info(f"Removed {duplicates_removed} duplicate tasks, {len(unique_tasks)} unique")
+            
+            return unique_tasks
+        
+        return all_tasks
     
     def fetch_task_by_id(self, task_id: int) -> Optional[Task]:
         """Fetch a single task by ID."""
@@ -111,11 +154,12 @@ def download_image(url: str, cache_dir: Path, timeout: int = 30) -> Optional[Pat
     if not url or not url.strip():
         return None
     
-    # Create cache filename from URL
-    filename = url.split("/")[-1].split("?")[0]
-    if not filename or len(filename) > 100:
-        import hashlib
-        filename = hashlib.md5(url.encode()).hexdigest() + ".png"
+    # Create cache filename from URL hash
+    url_hash = hashlib.md5(url.encode()).hexdigest()
+    ext = url.split(".")[-1].split("?")[0]
+    if ext not in ["png", "jpg", "jpeg", "webp"]:
+        ext = "png"
+    filename = f"{url_hash}.{ext}"
     
     cache_path = cache_dir / filename
     if cache_path.exists():
@@ -136,7 +180,7 @@ def download_image(url: str, cache_dir: Path, timeout: int = 30) -> Optional[Pat
         
         return cache_path
     except Exception as e:
-        print(f"Failed to download {url}: {e}")
+        logger.error(f"Failed to download {url}: {e}")
         return None
 
 
@@ -148,7 +192,7 @@ def load_image_from_url(url: str, cache_dir: Path) -> Optional[Image.Image]:
     try:
         return Image.open(path).convert("RGB")
     except Exception as e:
-        print(f"Failed to load image {path}: {e}")
+        logger.error(f"Failed to load image {path}: {e}")
         return None
 
 
@@ -165,18 +209,18 @@ class LoadedTask:
         """Download all images and create LoadedTask."""
         init_image = load_image_from_url(task.init_image_url, cache_dir)
         if init_image is None:
-            print(f"Task {task.id}: Failed to load init_image")
+            logger.error(f"Task {task.id}: Failed to load init_image")
             return None
         
         mask_path = download_image(task.mask_image_url, cache_dir)
         if mask_path is None:
-            print(f"Task {task.id}: Failed to load mask_image")
+            logger.error(f"Task {task.id}: Failed to load mask_image")
             return None
         mask_image = Image.open(mask_path).convert("L")
         
         char_path = download_image(task.character_image_url, cache_dir)
         if char_path is None:
-            print(f"Task {task.id}: Failed to load character_image")
+            logger.error(f"Task {task.id}: Failed to load character_image")
             return None
         character_image = Image.open(char_path).convert("RGBA")
         
