@@ -62,6 +62,116 @@ def _setup_flash_attn_mock():
 _setup_flash_attn_mock()
 
 
+def _init_insightface():
+    """Initialize InsightFace models."""
+    global _FACE_ANALYZER, _FACE_SWAPPER
+    
+    if _FACE_ANALYZER is not None:
+        return _FACE_ANALYZER, _FACE_SWAPPER
+    
+    try:
+        import insightface
+        from insightface.app import FaceAnalysis
+        
+        logger.info("Loading InsightFace models...")
+        _FACE_ANALYZER = FaceAnalysis(
+            name='buffalo_l',
+            providers=['CUDAExecutionProvider', 'CPUExecutionProvider']
+        )
+        _FACE_ANALYZER.prepare(ctx_id=0, det_size=(640, 640))
+        
+        model_path = os.path.expanduser("~/.insightface/models/inswapper_128.onnx")
+        
+        if not os.path.exists(model_path):
+            logger.error(f"Face swapper model not found at {model_path}")
+            logger.error("Download from: https://huggingface.co/deepinsight/inswapper/resolve/main/inswapper_128.onnx")
+            _FACE_SWAPPER = None
+        else:
+            _FACE_SWAPPER = insightface.model_zoo.get_model(model_path)
+        
+        logger.info("InsightFace models loaded")
+        return _FACE_ANALYZER, _FACE_SWAPPER
+        
+    except ImportError:
+        logger.error("InsightFace not installed. Run: pip install insightface onnxruntime-gpu")
+        return None, None
+
+
+def swap_face_insightface(
+    init_image: Image.Image,
+    character_image: Image.Image,
+    mask_image: Optional[Image.Image] = None,
+) -> Optional[Image.Image]:
+    """
+    Swap face using InsightFace - preserves exact identity from character.
+    """
+    analyzer, swapper = _init_insightface()
+    
+    if analyzer is None or swapper is None:
+        logger.error("InsightFace not available")
+        return None
+    
+    # Convert to BGR for InsightFace
+    init_array = np.array(init_image.convert("RGB"))
+    init_bgr = cv2.cvtColor(init_array, cv2.COLOR_RGB2BGR)
+    
+    char_array = np.array(character_image.convert("RGB"))
+    char_bgr = cv2.cvtColor(char_array, cv2.COLOR_RGB2BGR)
+    
+    # Detect faces
+    init_faces = analyzer.get(init_bgr)
+    char_faces = analyzer.get(char_bgr)
+    
+    if not init_faces:
+        logger.error("No face detected in init image")
+        return None
+    
+    if not char_faces:
+        logger.error("No face detected in character image")
+        return None
+    
+    # Get source face (from character) and target face (in init image)
+    source_face = char_faces[0]
+    
+    # If mask provided, find face in mask region
+    if mask_image is not None:
+        mask_array = np.array(mask_image.convert("L").resize(init_image.size, Image.Resampling.LANCZOS))
+        mask_points = np.where(mask_array > 128)
+        
+        if len(mask_points[0]) > 0:
+            mask_center_y = mask_points[0].mean()
+            mask_center_x = mask_points[1].mean()
+            
+            # Find face closest to mask center
+            best_face = None
+            best_dist = float('inf')
+            
+            for face in init_faces:
+                bbox = face.bbox
+                face_center_x = (bbox[0] + bbox[2]) / 2
+                face_center_y = (bbox[1] + bbox[3]) / 2
+                
+                dist = np.sqrt((face_center_x - mask_center_x)**2 + (face_center_y - mask_center_y)**2)
+                if dist < best_dist:
+                    best_dist = dist
+                    best_face = face
+            
+            target_face = best_face or init_faces[0]
+        else:
+            target_face = init_faces[0]
+    else:
+        target_face = init_faces[0]
+    
+    logger.info(f"Face swap: source bbox={source_face.bbox.astype(int).tolist()}, target bbox={target_face.bbox.astype(int).tolist()}")
+    
+    # Perform swap
+    result_bgr = swapper.get(init_bgr, target_face, source_face, paste_back=True)
+    
+    # Convert back to RGB
+    result_rgb = cv2.cvtColor(result_bgr, cv2.COLOR_BGR2RGB)
+    return Image.fromarray(result_rgb)
+
+
 def detect_face_region(image: Image.Image) -> tuple:
     """
     Detect face region in character image.
