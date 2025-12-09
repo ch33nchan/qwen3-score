@@ -12,3 +12,5 @@ requests>=2.31.0
 sentencepiece>=0.2.0
 mediapipe>=0.10.0
 opencv-python>=4.8.0
+insightface>=0.7.3
+onnxruntime-gpu>=1.16.0
