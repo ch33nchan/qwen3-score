@@ -56,6 +56,46 @@ def _setup_flash_attn_mock():
 _setup_flash_attn_mock()
 
 
+def composite_character_face_on_mask(
+    init_image: Image.Image,
+    character_image: Image.Image,
+    mask_image: Image.Image,
+) -> Image.Image:
+    """
+    Composite character face onto init image using mask.
+    Intelligently crops character to face region and fits to mask.
+    """
+    init_image = init_image.convert("RGBA")
+    character_image = character_image.convert("RGBA")
+    mask_image = mask_image.convert("L")
+    
+    if mask_image.size != init_image.size:
+        mask_image = mask_image.resize(init_image.size, Image.Resampling.LANCZOS)
+    
+    # Find mask bounding box
+    mask_array = np.array(mask_image)
+    coords = np.column_stack(np.where(mask_array > 128))
+    if len(coords) == 0:
+        return init_image.convert("RGB")
+    
+    y_min, x_min = coords.min(axis=0)
+    y_max, x_max = coords.max(axis=0)
+    mask_width = x_max - x_min
+    mask_height = y_max - y_min
+    
+    # Crop character to face region (top 40%) and resize to mask
+    char_width, char_height = character_image.size
+    face_crop_height = int(char_height * 0.4)
+    character_face = character_image.crop((0, 0, char_width, face_crop_height))
+    character_face = character_face.resize((mask_width, mask_height), Image.Resampling.LANCZOS)
+    
+    # Paste character face at mask location
+    result = init_image.copy()
+    result.paste(character_face, (x_min, y_min), mask_image.crop((x_min, y_min, x_max, y_max)))
+    
+    return result.convert("RGB")
+
+
 class QwenEditPipeline:
     """Wrapper for Qwen-Image-Edit pipeline."""
     
@@ -137,15 +177,15 @@ def blend_with_mask(
 
 
 def create_inpaint_prompt(character_name: str) -> str:
-    """Create prompt for face inpainting with emphasis on realism."""
+    """Create prompt for face inpainting refinement (character already composited)."""
     return (
-        f"Replace the masked face region with {character_name}'s face. "
-        f"Match the exact facial features, skin tone, expression, age, and gender from the character reference. "
-        f"Maintain perfect lighting consistency - shadows, highlights, and color temperature must match the scene exactly. "
+        f"Refine and blend the face naturally into the scene. "
+        f"Maintain the exact facial features and appearance. "
+        f"Match lighting perfectly - shadows, highlights, and color temperature must be consistent. "
         f"The result must look like an unedited, real photograph. "
         f"Natural skin texture, realistic hair, proper shadows. "
         f"Seamless integration with no visible seams or boundaries. "
-        f"RAW photo, DSLR quality, 8k uhd, natural skin pores, detailed imperfections, unedited, no retouching."
+        f"RAW photo, DSLR quality, photorealistic."
     )
 
 
@@ -175,15 +215,18 @@ def run_eacps_inpaint(
     
     global_candidates: List[Candidate] = []
     
+    # Pre-composite character face onto masked region
+    composited_input = composite_character_face_on_mask(init_image, character_image, mask_image)
+    
     for i in range(eacps.k_global):
         seed = i * 31 + 5000
         
         if verbose:
             print(f"    Generating candidate {i+1}/{eacps.k_global} (seed={seed})...")
         
-        # Generate
+        # Generate from composited image (character face already placed)
         raw_result = qwen_pipe.generate(
-            image=init_image,
+            image=composited_input,
             prompt=prompt,
             seed=seed,
             num_steps=model.num_inference_steps,
@@ -230,8 +273,9 @@ def run_eacps_inpaint(
             if verbose:
                 print(f"    Refining {j+1}.{k+1} (seed={child_seed})...")
             
+            # Use composited input (character face already placed)
             raw_result = qwen_pipe.generate(
-                image=init_image,
+                image=composited_input,
                 prompt=prompt,
                 seed=child_seed,
                 num_steps=model.num_inference_steps,
@@ -328,6 +372,10 @@ def process_task(
         mask_image.save(task_dir / "mask.png")
         character_image.convert("RGB").save(task_dir / "character.png")
         best_result.save(task_dir / "result.png")
+        
+        # Save composited reference for debugging
+        composited_ref = composite_character_face_on_mask(init_image, character_image, mask_image)
+        composited_ref.save(task_dir / "composited_reference.png")
         
         # Save all candidates
         for i, cand in enumerate(all_candidates[:5]):  # Top 5
