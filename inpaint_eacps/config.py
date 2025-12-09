@@ -24,8 +24,8 @@ class ModelConfig:
     """Model configuration."""
     # Qwen Edit
     qwen_model_id: str = "Qwen/Qwen-Image-Edit"
-    num_inference_steps: int = 50  # Balanced for quality/speed
-    guidance_scale: float = 6.0  # Balanced guidance
+    num_inference_steps: int = 30  # Reduced to prevent over-editing
+    guidance_scale: float = 4.0  # Lower guidance to preserve face swap
     negative_prompt: str = (
         "blurry, low quality, distorted, artifacts, double face, "
         "unnatural, fake, AI generated, cartoon, painting, illustration, "

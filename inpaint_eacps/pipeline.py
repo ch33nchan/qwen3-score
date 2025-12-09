@@ -358,11 +358,11 @@ def blend_with_mask(
 def create_inpaint_prompt(character_name: str) -> str:
     """Create prompt for post-faceswap refinement."""
     return (
-        f"Refine and blend the face seamlessly into the scene. "
-        f"Match lighting perfectly - shadows, highlights, and color temperature must be consistent. "
-        f"Natural skin texture, realistic hair, proper shadows. "
-        f"Seamless integration with no visible seams or boundaries. "
-        f"The result must look like an unedited, real photograph."
+        f"A high-quality photo of {character_name}. "
+        f"Ensure the face is sharp, realistic, and perfectly blended. "
+        f"Match the skin tone, lighting, and shadows of the original scene. "
+        f"No artifacts, no blur, no distortion. "
+        f"Keep the exact facial features of the character."
     )
 
 
