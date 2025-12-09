@@ -7,6 +7,7 @@ import logging
 from io import BytesIO
 from typing import Dict, Optional, Tuple
 from PIL import Image
+import torch
 
 logger = logging.getLogger(__name__)
 
@@ -31,8 +32,14 @@ class GeminiScorer:
             try:
                 import google.generativeai as genai
                 genai.configure(api_key=self.api_key)
-                self._client = genai.GenerativeModel(self.model)
-                logger.info("Gemini client initialized")
+                # Try the model, fallback to gemini-pro if not found
+                try:
+                    self._client = genai.GenerativeModel(self.model)
+                    logger.info(f"Gemini client initialized with {self.model}")
+                except Exception as e:
+                    logger.warning(f"Failed to load {self.model}, trying gemini-pro: {e}")
+                    self._client = genai.GenerativeModel("gemini-pro")
+                    logger.info("Gemini client initialized with gemini-pro (fallback)")
             except ImportError:
                 logger.error("google-generativeai not installed. Run: pip install google-generativeai")
                 raise
@@ -134,10 +141,11 @@ class MoondreamScorer:
                 from transformers import AutoModelForCausalLM, AutoTokenizer
                 
                 logger.info(f"Loading Moondream V3 from {self.model_id}...")
+                dtype = torch.bfloat16 if "cuda" in self.device else torch.float32
                 self._model = AutoModelForCausalLM.from_pretrained(
                     self.model_id,
                     trust_remote_code=True,
-                    torch_dtype=torch.bfloat16 if "cuda" in self.device else torch.float32,
+                    torch_dtype=dtype,
                 ).to(self.device)
                 self._tokenizer = AutoTokenizer.from_pretrained(
                     self.model_id,
@@ -147,6 +155,8 @@ class MoondreamScorer:
                 logger.info("Moondream V3 loaded")
             except Exception as e:
                 logger.error(f"Failed to load Moondream: {e}")
+                import traceback
+                traceback.print_exc()
                 raise
         return self._model, self._tokenizer
     
