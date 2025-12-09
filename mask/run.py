@@ -174,11 +174,19 @@ def parse_args() -> argparse.Namespace:
     # Task filtering
     parser.add_argument(
         "--task_ids", type=str, nargs="+",
-        help="Process only these task IDs"
+        help="Process only these task IDs (from data.id field)"
     )
     parser.add_argument(
         "--limit", type=int,
         help="Limit number of tasks to process"
+    )
+    parser.add_argument(
+        "--no_dedup", action="store_true",
+        help="Disable deduplication (process all tasks even with same images)"
+    )
+    parser.add_argument(
+        "--from_file", type=str,
+        help="Read tasks from local JSON file instead of API"
     )
     
     # Debug settings
@@ -262,19 +270,36 @@ def main():
     logger.info(f"EACPS: k_global={config.eacps.k_global}, m_global={config.eacps.m_global}, k_local={config.eacps.k_local}")
     logger.info(f"Output: {output_dir}")
     
-    # Fetch tasks from Label Studio (from all specified projects)
-    logger.info("Fetching tasks from Label Studio...")
-    client = LabelStudioClient(config.label_studio.url, config.label_studio.api_key)
+    # Fetch tasks from Label Studio or local file
+    from labelstudio import Task
     
     tasks = []
-    for pid in project_ids:
-        try:
-            logger.info(f"  Fetching project {pid}...")
-            project_tasks = client.fetch_project_tasks(pid)
-            logger.info(f"    Found {len(project_tasks)} tasks")
-            tasks.extend(project_tasks)
-        except Exception as e:
-            logger.error(f"    Error fetching project {pid}: {e}")
+    
+    if args.from_file:
+        # Read from local JSON file
+        logger.info(f"Reading tasks from file: {args.from_file}")
+        import json
+        with open(args.from_file) as f:
+            data = json.load(f)
+        
+        for item in data:
+            task = Task.from_dict(item)
+            if task.is_valid():
+                tasks.append(task)
+        logger.info(f"  Loaded {len(tasks)} valid tasks from file")
+    else:
+        # Fetch from Label Studio API
+        logger.info("Fetching tasks from Label Studio...")
+        client = LabelStudioClient(config.label_studio.url, config.label_studio.api_key)
+        
+        for pid in project_ids:
+            try:
+                logger.info(f"  Fetching project {pid}...")
+                project_tasks = client.fetch_project_tasks(pid, deduplicate=not args.no_dedup)
+                logger.info(f"    Found {len(project_tasks)} tasks")
+                tasks.extend(project_tasks)
+            except Exception as e:
+                logger.error(f"    Error fetching project {pid}: {e}")
     
     if not tasks:
         logger.error("No tasks found in any project")
