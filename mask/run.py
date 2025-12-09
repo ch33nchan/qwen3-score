@@ -105,7 +105,7 @@ def parse_args() -> argparse.Namespace:
     
     # Label Studio settings
     parser.add_argument(
-        "--project_id", type=int, nargs="+", required=True,
+        "--project_id", type=int, nargs="+",
         help="Label Studio project ID(s). Can specify multiple: --project_id 123 456 789"
     )
     parser.add_argument(
@@ -205,8 +205,13 @@ def parse_args() -> argparse.Namespace:
 def main():
     args = parse_args()
     
-    # Validate API key
-    if not args.api_key:
+    # Validate: need either project_id or from_file
+    if not args.project_id and not args.from_file:
+        print("Error: Either --project_id or --from_file is required")
+        sys.exit(1)
+    
+    # Validate API key (only needed for API)
+    if not args.from_file and not args.api_key:
         print("Error: API key required. Set --api_key or LABEL_STUDIO_API_KEY env var")
         sys.exit(1)
     
@@ -243,11 +248,11 @@ def main():
     logger.info(f"Using devices: {available_devices}")
     
     # Handle single or multiple project IDs
-    project_ids = args.project_id if isinstance(args.project_id, list) else [args.project_id]
+    project_ids = args.project_id if args.project_id else []
     
     # Create config (use first project_id for config, but we'll fetch from all)
     config = PipelineConfig.from_args(
-        project_id=project_ids[0],
+        project_id=project_ids[0] if project_ids else 0,
         api_key=args.api_key,
         url=args.url,
         output_dir=args.output_dir,
@@ -265,7 +270,10 @@ def main():
     cache_dir.mkdir(parents=True, exist_ok=True)
     
     logger.info(f"Label Studio: {config.label_studio.url}")
-    logger.info(f"Project IDs: {project_ids}")
+    if args.from_file:
+        logger.info(f"Source: {args.from_file}")
+    else:
+        logger.info(f"Project IDs: {project_ids}")
     logger.info(f"Devices: {config.gpu.devices}")
     logger.info(f"EACPS: k_global={config.eacps.k_global}, m_global={config.eacps.m_global}, k_local={config.eacps.k_local}")
     logger.info(f"Output: {output_dir}")
@@ -305,7 +313,10 @@ def main():
         logger.error("No tasks found in any project")
         sys.exit(1)
     
-    logger.info(f"Total: {len(tasks)} unique tasks from {len(project_ids)} project(s)")
+    if args.from_file:
+        logger.info(f"Total: {len(tasks)} tasks from file")
+    else:
+        logger.info(f"Total: {len(tasks)} unique tasks from {len(project_ids)} project(s)")
     
     # Log unique characters
     unique_chars = set(t.character_name for t in tasks)
@@ -375,7 +386,7 @@ def main():
     
     # Save summary
     summary = {
-        "project_ids": project_ids,
+        "source": args.from_file if args.from_file else f"projects:{project_ids}",
         "total_tasks": len(loaded_tasks),
         "successful": sum(1 for r in results if r.success),
         "failed": sum(1 for r in results if not r.success),
