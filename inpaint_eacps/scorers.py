@@ -22,7 +22,7 @@ def image_to_base64(image: Image.Image, format: str = "PNG") -> str:
 class GeminiScorer:
     """Score images using Gemini API."""
     
-    def __init__(self, api_key: str, model: str = "gemini-2.0-flash"):
+    def __init__(self, api_key: str, model: str = "gemini-2.5-pro"):
         self.api_key = api_key
         self.model = model
         self._client = None
