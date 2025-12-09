@@ -269,7 +269,14 @@ def main():
         logger.error(f"Error fetching tasks: {e}")
         sys.exit(1)
     
-    logger.info(f"Found {len(tasks)} tasks")
+    logger.info(f"Found {len(tasks)} unique tasks")
+    
+    # Log unique characters
+    unique_chars = set(t.character_name for t in tasks)
+    logger.info(f"Unique characters: {len(unique_chars)}")
+    for char in sorted(unique_chars):
+        count = sum(1 for t in tasks if t.character_name == char)
+        logger.info(f"  - {char}: {count} tasks")
     
     # Filter tasks if requested
     if args.task_ids:
