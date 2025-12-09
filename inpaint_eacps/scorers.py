@@ -32,14 +32,8 @@ class GeminiScorer:
             try:
                 import google.generativeai as genai
                 genai.configure(api_key=self.api_key)
-                # Try the model, fallback to gemini-pro if not found
-                try:
-                    self._client = genai.GenerativeModel(self.model)
-                    logger.info(f"Gemini client initialized with {self.model}")
-                except Exception as e:
-                    logger.warning(f"Failed to load {self.model}, trying gemini-pro: {e}")
-                    self._client = genai.GenerativeModel("gemini-pro")
-                    logger.info("Gemini client initialized with gemini-pro (fallback)")
+                self._client = genai.GenerativeModel(self.model)
+                logger.info(f"Gemini client initialized with {self.model}")
             except ImportError:
                 logger.error("google-generativeai not installed. Run: pip install google-generativeai")
                 raise

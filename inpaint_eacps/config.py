@@ -34,7 +34,7 @@ class ModelConfig:
     
     # Gemini
     gemini_api_key: str = field(default_factory=lambda: os.getenv("GEMINI_API_KEY", ""))
-    gemini_model: str = "gemini-pro"  # Use stable model name
+    gemini_model: str = "gemini-1.5-flash"  # Fast vision-capable model
     
     # Moondream V3
     moondream_model_id: str = "vikhyatk/moondream2"  # moondream2 is the latest version
