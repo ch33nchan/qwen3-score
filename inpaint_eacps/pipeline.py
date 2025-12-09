@@ -1,6 +1,7 @@
 """
 Inpainting pipeline with EACPS inference scaling.
-Uses Qwen-Edit for generation and Gemini/Moondream for scoring.
+Uses InsightFace for face swap and Qwen-Edit for refinement.
+Gemini/Moondream for scoring.
 """
 import os
 import sys
@@ -12,6 +13,7 @@ from typing import List, Dict, Any, Optional, Tuple
 import torch
 from PIL import Image, ImageFilter
 import numpy as np
+import cv2
 
 from config import EACPSConfig, ModelConfig, PipelineConfig
 from scorers import MultiModelScorer
@@ -20,6 +22,10 @@ logger = logging.getLogger(__name__)
 
 # Disable flash attention
 os.environ["DIFFUSERS_USE_FLASH_ATTENTION"] = "0"
+
+# InsightFace global cache
+_FACE_ANALYZER = None
+_FACE_SWAPPER = None
 
 
 @dataclass
@@ -228,15 +234,13 @@ def blend_with_mask(
 
 
 def create_inpaint_prompt(character_name: str) -> str:
-    """Create prompt for face inpainting refinement (character already composited)."""
+    """Create prompt for post-faceswap refinement."""
     return (
-        f"Refine and blend the face naturally into the scene. "
-        f"Maintain the exact facial features and appearance. "
+        f"Refine and blend the face seamlessly into the scene. "
         f"Match lighting perfectly - shadows, highlights, and color temperature must be consistent. "
-        f"The result must look like an unedited, real photograph. "
         f"Natural skin texture, realistic hair, proper shadows. "
         f"Seamless integration with no visible seams or boundaries. "
-        f"RAW photo, DSLR quality, photorealistic."
+        f"The result must look like an unedited, real photograph."
     )
 
 
@@ -260,7 +264,20 @@ def run_eacps_inpaint(
     
     prompt = create_inpaint_prompt(character_name)
     
-    # Stage 1: Global exploration
+    # Stage 0: Face swap using InsightFace (preserves exact identity)
+    if verbose:
+        print(f"  Stage 0: InsightFace face swap")
+    
+    swapped_base = swap_face_insightface(init_image, character_image, mask_image)
+    
+    if swapped_base is None:
+        logger.error("Face swap failed, falling back to compositing")
+        swapped_base = composite_character_face_on_mask(init_image, character_image, mask_image)
+    else:
+        if verbose:
+            print(f"    Face swap successful")
+    
+    # Stage 1: Global exploration - refine the face-swapped result
     if verbose:
         print(f"  Stage 1: Global exploration ({eacps.k_global} candidates)")
     
@@ -275,9 +292,9 @@ def run_eacps_inpaint(
         if verbose:
             print(f"    Generating candidate {i+1}/{eacps.k_global} (seed={seed})...")
         
-        # Generate from composited image (character face already placed)
+        # Generate from face-swapped image (exact identity preserved)
         raw_result = qwen_pipe.generate(
-            image=composited_input,
+            image=swapped_base,
             prompt=prompt,
             seed=seed,
             num_steps=model.num_inference_steps,
@@ -324,9 +341,9 @@ def run_eacps_inpaint(
             if verbose:
                 print(f"    Refining {j+1}.{k+1} (seed={child_seed})...")
             
-            # Use composited input (character face already placed)
+            # Use face-swapped base for refinement
             raw_result = qwen_pipe.generate(
-                image=composited_input,
+                image=swapped_base,
                 prompt=prompt,
                 seed=child_seed,
                 num_steps=model.num_inference_steps,
@@ -427,6 +444,11 @@ def process_task(
         # Save composited reference for debugging
         composited_ref = composite_character_face_on_mask(init_image, character_image, mask_image)
         composited_ref.save(task_dir / "composited_reference.png")
+        
+        # Save face-swapped base
+        swapped = swap_face_insightface(init_image, character_image, mask_image)
+        if swapped:
+            swapped.save(task_dir / "faceswap_base.png")
         
         # Save all candidates
         for i, cand in enumerate(all_candidates[:5]):  # Top 5
