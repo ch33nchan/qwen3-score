@@ -22,7 +22,7 @@ def image_to_base64(image: Image.Image, format: str = "PNG") -> str:
 class GeminiScorer:
     """Score images using Gemini API."""
     
-    def __init__(self, api_key: str, model: str = "gemini-1.5-flash"):
+    def __init__(self, api_key: str, model: str = "gemini-2.0-flash"):
         self.api_key = api_key
         self.model = model
         self._client = None
@@ -32,8 +32,10 @@ class GeminiScorer:
             try:
                 import google.generativeai as genai
                 genai.configure(api_key=self.api_key)
-                self._client = genai.GenerativeModel(self.model)
-                logger.info(f"Gemini client initialized with {self.model}")
+                # Use models/ prefix for proper API resolution
+                model_name = self.model if self.model.startswith("models/") else f"models/{self.model}"
+                self._client = genai.GenerativeModel(model_name)
+                logger.info(f"Gemini client initialized with {model_name}")
             except ImportError:
                 logger.error("google-generativeai not installed. Run: pip install google-generativeai")
                 raise
