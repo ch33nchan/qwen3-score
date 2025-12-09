@@ -1,0 +1,140 @@
+2025-12-08 22:22:21 | INFO     | __main__ | ======================================================================
+2025-12-08 22:22:21 | INFO     | __main__ | MASK PIPELINE: Character Face Replacement with EACPS
+2025-12-08 22:22:21 | INFO     | __main__ | ======================================================================
+2025-12-08 22:22:21 | INFO     | __main__ | Checking GPU availability...
+2025-12-08 22:22:22 | INFO     | __main__ | Using devices: ['cuda:0']
+2025-12-08 22:22:22 | INFO     | __main__ | Label Studio: http://localhost:8080
+2025-12-08 22:22:22 | INFO     | __main__ | Source: project-label.json
+2025-12-08 22:22:22 | INFO     | __main__ | Devices: ['cuda:0']
+2025-12-08 22:22:22 | INFO     | __main__ | EACPS: k_global=4, m_global=2, k_local=2
+2025-12-08 22:22:22 | INFO     | __main__ | Output: outputs/mask_results
+2025-12-08 22:22:22 | INFO     | __main__ | Reading tasks from file: project-label.json
+2025-12-08 22:22:22 | INFO     | __main__ |   Loaded 150 valid tasks from file
+2025-12-08 22:22:22 | INFO     | __main__ | Total: 150 tasks from file
+2025-12-08 22:22:22 | INFO     | __main__ | Unique characters: 24
+2025-12-08 22:22:22 | INFO     | __main__ |   - Aman: 9 tasks
+2025-12-08 22:22:22 | INFO     | __main__ |   - Ashwin: 6 tasks
+2025-12-08 22:22:22 | INFO     | __main__ |   - Ashwin Jogi: 7 tasks
+2025-12-08 22:22:22 | INFO     | __main__ |   - Daniel D: 5 tasks
+2025-12-08 22:22:22 | INFO     | __main__ |   - Deepali Mishra: 2 tasks
+2025-12-08 22:22:22 | INFO     | __main__ |   - Hrivaan rameshvar: 8 tasks
+2025-12-08 22:22:22 | INFO     | __main__ |   - Ishanya Rabha: 7 tasks
+2025-12-08 22:22:22 | INFO     | __main__ |   - Ishwar Singh: 6 tasks
+2025-12-08 22:22:22 | INFO     | __main__ |   - Laasya Jain: 7 tasks
+2025-12-08 22:22:22 | INFO     | __main__ |   - Marie Flint: 9 tasks
+2025-12-08 22:22:22 | INFO     | __main__ |   - Mythira: 6 tasks
+2025-12-08 22:22:22 | INFO     | __main__ |   - Nischay Sen: 6 tasks
+2025-12-08 22:22:22 | INFO     | __main__ |   - Pritam: 4 tasks
+2025-12-08 22:22:22 | INFO     | __main__ |   - Rana Khakira: 8 tasks
+2025-12-08 22:22:22 | INFO     | __main__ |   - Ridika Pillai: 7 tasks
+2025-12-08 22:22:22 | INFO     | __main__ |   - Rohit Sawant: 11 tasks
+2025-12-08 22:22:22 | INFO     | __main__ |   - Roshan: 4 tasks
+2025-12-08 22:22:22 | INFO     | __main__ |   - Samar Sethi: 7 tasks
+2025-12-08 22:22:22 | INFO     | __main__ |   - Samiksha Singh: 4 tasks
+2025-12-08 22:22:22 | INFO     | __main__ |   - Sandeep Khanna: 3 tasks
+2025-12-08 22:22:22 | INFO     | __main__ |   - Savin Devadiga: 6 tasks
+2025-12-08 22:22:22 | INFO     | __main__ |   - Siya: 7 tasks
+2025-12-08 22:22:22 | INFO     | __main__ |   - Suraj: 5 tasks
+2025-12-08 22:22:22 | INFO     | __main__ |   - Veeransh Sharma: 6 tasks
+2025-12-08 22:22:22 | INFO     | __main__ | Filtered to 1 tasks by ID
+2025-12-08 22:22:22 | INFO     | __main__ | Downloading images...
+2025-12-08 22:22:22 | INFO     | __main__ |   [1/1] Task 71651078: Suraj
+2025-12-08 22:22:22 | DEBUG    | urllib3.connectionpool | Starting new HTTPS connection (1): content.dashtoon.ai:443
+2025-12-08 22:22:22 | DEBUG    | urllib3.connectionpool | https://content.dashtoon.ai:443 "GET /user-uploaded-images/c1bdfee2-6101-4758-a768-d458c10e1eab.webp HTTP/1.1" 200 1162450
+2025-12-08 22:22:23 | DEBUG    | PIL.Image | Importing AvifImagePlugin
+2025-12-08 22:22:23 | DEBUG    | PIL.Image | Importing BlpImagePlugin
+2025-12-08 22:22:23 | DEBUG    | PIL.Image | Importing BmpImagePlugin
+2025-12-08 22:22:23 | DEBUG    | PIL.Image | Importing BufrStubImagePlugin
+2025-12-08 22:22:23 | DEBUG    | PIL.Image | Importing CurImagePlugin
+2025-12-08 22:22:23 | DEBUG    | PIL.Image | Importing DcxImagePlugin
+2025-12-08 22:22:23 | DEBUG    | PIL.Image | Importing DdsImagePlugin
+2025-12-08 22:22:23 | DEBUG    | PIL.Image | Importing EpsImagePlugin
+2025-12-08 22:22:23 | DEBUG    | PIL.Image | Importing FitsImagePlugin
+2025-12-08 22:22:23 | DEBUG    | PIL.Image | Importing FliImagePlugin
+2025-12-08 22:22:23 | DEBUG    | PIL.Image | Importing FpxImagePlugin
+2025-12-08 22:22:23 | DEBUG    | PIL.Image | Image: failed to import FpxImagePlugin: No module named 'olefile'
+2025-12-08 22:22:23 | DEBUG    | PIL.Image | Importing FtexImagePlugin
+2025-12-08 22:22:23 | DEBUG    | PIL.Image | Importing GbrImagePlugin
+2025-12-08 22:22:23 | DEBUG    | PIL.Image | Importing GifImagePlugin
+2025-12-08 22:22:23 | DEBUG    | PIL.Image | Importing GribStubImagePlugin
+2025-12-08 22:22:23 | DEBUG    | PIL.Image | Importing Hdf5StubImagePlugin
+2025-12-08 22:22:23 | DEBUG    | PIL.Image | Importing IcnsImagePlugin
+2025-12-08 22:22:23 | DEBUG    | PIL.Image | Importing IcoImagePlugin
+2025-12-08 22:22:23 | DEBUG    | PIL.Image | Importing ImImagePlugin
+2025-12-08 22:22:23 | DEBUG    | PIL.Image | Importing ImtImagePlugin
+2025-12-08 22:22:23 | DEBUG    | PIL.Image | Importing IptcImagePlugin
+2025-12-08 22:22:23 | DEBUG    | PIL.Image | Importing JpegImagePlugin
+2025-12-08 22:22:23 | DEBUG    | PIL.Image | Importing Jpeg2KImagePlugin
+2025-12-08 22:22:23 | DEBUG    | PIL.Image | Importing McIdasImagePlugin
+2025-12-08 22:22:23 | DEBUG    | PIL.Image | Importing MicImagePlugin
+2025-12-08 22:22:23 | DEBUG    | PIL.Image | Image: failed to import MicImagePlugin: No module named 'olefile'
+2025-12-08 22:22:23 | DEBUG    | PIL.Image | Importing MpegImagePlugin
+2025-12-08 22:22:23 | DEBUG    | PIL.Image | Importing MpoImagePlugin
+2025-12-08 22:22:23 | DEBUG    | PIL.Image | Importing MspImagePlugin
+2025-12-08 22:22:23 | DEBUG    | PIL.Image | Importing PalmImagePlugin
+2025-12-08 22:22:23 | DEBUG    | PIL.Image | Importing PcdImagePlugin
+2025-12-08 22:22:23 | DEBUG    | PIL.Image | Importing PcxImagePlugin
+2025-12-08 22:22:23 | DEBUG    | PIL.Image | Importing PdfImagePlugin
+2025-12-08 22:22:23 | DEBUG    | PIL.Image | Importing PixarImagePlugin
+2025-12-08 22:22:23 | DEBUG    | PIL.Image | Importing PngImagePlugin
+2025-12-08 22:22:23 | DEBUG    | PIL.Image | Importing PpmImagePlugin
+2025-12-08 22:22:23 | DEBUG    | PIL.Image | Importing PsdImagePlugin
+2025-12-08 22:22:23 | DEBUG    | PIL.Image | Importing QoiImagePlugin
+2025-12-08 22:22:23 | DEBUG    | PIL.Image | Importing SgiImagePlugin
+2025-12-08 22:22:23 | DEBUG    | PIL.Image | Importing SpiderImagePlugin
+2025-12-08 22:22:23 | DEBUG    | PIL.Image | Importing SunImagePlugin
+2025-12-08 22:22:23 | DEBUG    | PIL.Image | Importing TgaImagePlugin
+2025-12-08 22:22:23 | DEBUG    | PIL.Image | Importing TiffImagePlugin
+2025-12-08 22:22:23 | DEBUG    | PIL.Image | Importing WebPImagePlugin
+2025-12-08 22:22:23 | DEBUG    | PIL.Image | Importing WmfImagePlugin
+2025-12-08 22:22:23 | DEBUG    | PIL.Image | Importing XbmImagePlugin
+2025-12-08 22:22:23 | DEBUG    | PIL.Image | Importing XpmImagePlugin
+2025-12-08 22:22:23 | DEBUG    | PIL.Image | Importing XVThumbImagePlugin
+2025-12-08 22:22:23 | DEBUG    | urllib3.connectionpool | Starting new HTTPS connection (1): content.dashtoon.ai:443
+2025-12-08 22:22:23 | DEBUG    | urllib3.connectionpool | https://content.dashtoon.ai:443 "GET /user-uploaded-images/14f7a738-8fa1-4fcd-8d4f-95011e53c620.png HTTP/1.1" 200 27792
+2025-12-08 22:22:23 | DEBUG    | urllib3.connectionpool | Starting new HTTPS connection (1): content.dashtoon.ai:443
+2025-12-08 22:22:25 | DEBUG    | urllib3.connectionpool | https://content.dashtoon.ai:443 "GET /stability-images/1c0347e2-6b60-48f0-a446-dd056e0893f7.png HTTP/1.1" 200 1066983
+2025-12-08 22:22:25 | DEBUG    | PIL.PngImagePlugin | STREAM b'IHDR' 16 13
+2025-12-08 22:22:25 | DEBUG    | PIL.PngImagePlugin | STREAM b'IDAT' 41 65536
+2025-12-08 22:22:25 | DEBUG    | PIL.PngImagePlugin | STREAM b'IHDR' 16 13
+2025-12-08 22:22:25 | DEBUG    | PIL.PngImagePlugin | STREAM b'IDAT' 41 65536
+2025-12-08 22:22:25 | DEBUG    | __main__ |     init: https://content.dashtoon.ai/user-uploaded-images/c...
+2025-12-08 22:22:25 | DEBUG    | __main__ |     mask: https://content.dashtoon.ai/user-uploaded-images/1...
+2025-12-08 22:22:25 | DEBUG    | __main__ |     char: https://content.dashtoon.ai/stability-images/1c034...
+2025-12-08 22:22:25 | INFO     | __main__ | Loaded 1 tasks successfully
+2025-12-08 22:22:25 | INFO     | __main__ | Processing tasks...
+2025-12-08 22:22:25 | INFO     | __main__ | Sequential processing on cuda:0
+2025-12-08 22:22:27 | INFO     | worker | Loading model on cuda:0...
+2025-12-08 22:22:27 | INFO     | pipeline | Loading model Qwen/Qwen-Image-Edit on cuda:0...
+2025-12-08 22:22:27 | DEBUG    | urllib3.connectionpool | Starting new HTTPS connection (1): huggingface.co:443
+2025-12-08 22:22:27 | DEBUG    | urllib3.connectionpool | https://huggingface.co:443 "GET /api/models/Qwen/Qwen-Image-Edit HTTP/1.1" 200 6203
+2025-12-08 22:22:27 | DEBUG    | urllib3.connectionpool | https://huggingface.co:443 "HEAD /Qwen/Qwen-Image-Edit/resolve/main/model_index.json HTTP/1.1" 307 0
+2025-12-08 22:22:27 | DEBUG    | urllib3.connectionpool | https://huggingface.co:443 "HEAD /api/resolve-cache/models/Qwen/Qwen-Image-Edit/ac7f9318f633fc4b5778c59367c8128225f1e3de/model_index.json HTTP/1.1" 200 0
+2025-12-08 22:22:36 | DEBUG    | urllib3.connectionpool | https://huggingface.co:443 "HEAD /openai/clip-vit-large-patch14/resolve/main/config.json HTTP/1.1" 307 0
+2025-12-08 22:22:36 | DEBUG    | urllib3.connectionpool | https://huggingface.co:443 "HEAD /api/resolve-cache/models/openai/clip-vit-large-patch14/32bd64288804d66eefd0ccbe215aa642df71cc41/config.json HTTP/1.1" 200 0
+2025-12-08 22:22:36 | DEBUG    | urllib3.connectionpool | https://huggingface.co:443 "HEAD /openai/clip-vit-large-patch14/resolve/main/config.json HTTP/1.1" 307 0
+2025-12-08 22:22:36 | DEBUG    | urllib3.connectionpool | https://huggingface.co:443 "HEAD /api/resolve-cache/models/openai/clip-vit-large-patch14/32bd64288804d66eefd0ccbe215aa642df71cc41/config.json HTTP/1.1" 200 0
+2025-12-08 22:22:36 | DEBUG    | urllib3.connectionpool | https://huggingface.co:443 "HEAD /openai/clip-vit-large-patch14/resolve/main/preprocessor_config.json HTTP/1.1" 307 0
+2025-12-08 22:22:36 | DEBUG    | urllib3.connectionpool | https://huggingface.co:443 "HEAD /api/resolve-cache/models/openai/clip-vit-large-patch14/32bd64288804d66eefd0ccbe215aa642df71cc41/preprocessor_config.json HTTP/1.1" 200 0
+2025-12-08 22:22:36 | DEBUG    | urllib3.connectionpool | https://huggingface.co:443 "HEAD /openai/clip-vit-large-patch14/resolve/main/processor_config.json HTTP/1.1" 404 0
+2025-12-08 22:22:37 | DEBUG    | urllib3.connectionpool | https://huggingface.co:443 "HEAD /openai/clip-vit-large-patch14/resolve/main/tokenizer_config.json HTTP/1.1" 307 0
+2025-12-08 22:22:37 | DEBUG    | urllib3.connectionpool | https://huggingface.co:443 "HEAD /api/resolve-cache/models/openai/clip-vit-large-patch14/32bd64288804d66eefd0ccbe215aa642df71cc41/tokenizer_config.json HTTP/1.1" 200 0
+2025-12-08 22:22:37 | DEBUG    | urllib3.connectionpool | https://huggingface.co:443 "GET /api/models/openai/clip-vit-large-patch14/tree/main/additional_chat_templates?recursive=False&expand=False HTTP/1.1" 404 64
+2025-12-08 22:22:37 | DEBUG    | urllib3.connectionpool | https://huggingface.co:443 "GET /api/models/openai/clip-vit-large-patch14/tree/main?recursive=True&expand=False HTTP/1.1" 200 2135
+2025-12-08 22:22:37 | DEBUG    | urllib3.connectionpool | https://huggingface.co:443 "GET /api/models/openai/clip-vit-large-patch14/tree/main/additional_chat_templates?recursive=False&expand=False HTTP/1.1" 404 64
+2025-12-08 22:22:37 | DEBUG    | urllib3.connectionpool | https://huggingface.co:443 "HEAD /openai/clip-vit-large-patch14/resolve/main/processor_config.json HTTP/1.1" 404 0
+2025-12-08 22:22:37 | DEBUG    | urllib3.connectionpool | https://huggingface.co:443 "HEAD /openai/clip-vit-large-patch14/resolve/main/chat_template.json HTTP/1.1" 404 0
+2025-12-08 22:22:37 | DEBUG    | urllib3.connectionpool | https://huggingface.co:443 "HEAD /openai/clip-vit-large-patch14/resolve/main/chat_template.jinja HTTP/1.1" 404 0
+2025-12-08 22:22:37 | DEBUG    | urllib3.connectionpool | https://huggingface.co:443 "HEAD /openai/clip-vit-large-patch14/resolve/main/audio_tokenizer_config.json HTTP/1.1" 404 0
+2025-12-08 22:22:38 | INFO     | worker | Model loaded
+2025-12-08 22:22:38 | INFO     | worker | [1/1] Processing task 71651078 (Suraj)
+2025-12-08 22:49:19 | INFO     | worker |   Completed in 1600.4s
+2025-12-08 22:49:19 | INFO     | __main__ | ======================================================================
+2025-12-08 22:49:19 | INFO     | __main__ | SUMMARY
+2025-12-08 22:49:19 | INFO     | __main__ | ======================================================================
+2025-12-08 22:49:19 | INFO     | __main__ | Total tasks: 1
+2025-12-08 22:49:19 | INFO     | __main__ | Successful: 1
+2025-12-08 22:49:19 | INFO     | __main__ | Failed: 0
+2025-12-08 22:49:19 | INFO     | __main__ | Elapsed: 0:26:53.902951
+2025-12-08 22:49:19 | INFO     | __main__ | Avg per task: 1613.9s
+2025-12-08 22:49:19 | INFO     | __main__ | Results saved to: outputs/mask_results
