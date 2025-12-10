@@ -1,0 +1,26 @@
+<View>
+  <Header value="EACPS Inpainting Evaluation"/>
+  <View style="display: flex; flex-direction: row; gap: 20px;">
+    <View>
+      <Header value="Result Image"/>
+      <Image name="image" value="$image" zoom="true" zoomControl="true"/>
+    </View>
+    <View>
+      <Header value="Source Image"/>
+      <Image name="init_image" value="$init_image" zoom="true" zoomControl="true"/>
+    </View>
+    <View>
+      <Header value="Character Reference"/>
+      <Image name="character_image" value="$character_image" zoom="true" zoomControl="true"/>
+    </View>
+  </View>
+  
+  <Header value="Rate the Result"/>
+  <Choices name="quality" toName="image">
+    <Choice value="Good"/>
+    <Choice value="Bad"/>
+    <Choice value="Ok"/>
+  </Choices>
+  
+  <TextArea name="comments" toName="image" placeholder="Enter comments here..."/>
+</View>
