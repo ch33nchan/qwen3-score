@@ -361,6 +361,8 @@ def create_inpaint_prompt(character_name: str) -> str:
         f"A high-quality photo of {character_name}. "
         f"Ensure the face is sharp, realistic, and perfectly blended. "
         f"Match the skin tone, lighting, and shadows of the original scene. "
+        f"Crucially, preserve the exact facial expression, emotions, and any tattoos or markings from the original image. "
+        f"Do not alter the pose or the mood. "
         f"No artifacts, no blur, no distortion. "
         f"Keep the exact facial features of the character."
     )
