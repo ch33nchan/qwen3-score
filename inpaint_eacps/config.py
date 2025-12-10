@@ -9,14 +9,15 @@ from typing import List, Optional
 @dataclass
 class EACPSConfig:
     """EACPS hyperparameters."""
-    k_global: int = 6  # Increased for better exploration
-    m_global: int = 3  # More top candidates for refinement
-    k_local: int = 3   # More local refinements
+    k_global: int = 8  # More exploration for better candidates
+    m_global: int = 3  # Top candidates for refinement
+    k_local: int = 4   # More local refinements per top candidate
     
     # Potential function weights
-    alpha_consistency: float = 1.5  # Increased weight
-    beta_quality: float = 2.5  # Much higher weight for realism
-    gamma_identity: float = 2.0  # Higher weight for identity preservation
+    # REALISM is king - we want photorealistic outputs above all else
+    alpha_consistency: float = 1.0  # Scene consistency
+    beta_quality: float = 4.0  # HEAVILY weight realism - this is the key metric
+    gamma_identity: float = 1.5  # Identity preservation (already handled by face swap)
 
 
 @dataclass
@@ -24,12 +25,17 @@ class ModelConfig:
     """Model configuration."""
     # Qwen Edit
     qwen_model_id: str = "Qwen/Qwen-Image-Edit"
-    num_inference_steps: int = 30  # Reduced to prevent over-editing
-    guidance_scale: float = 4.0  # Lower guidance to preserve face swap
+    num_inference_steps: int = 25  # Lower to preserve more of face swap
+    guidance_scale: float = 3.5  # Lower guidance to preserve face swap better
     negative_prompt: str = (
-        "blurry, low quality, distorted, artifacts, double face, "
-        "unnatural, fake, AI generated, cartoon, painting, illustration, "
-        "oversaturated, airbrushed, smooth skin, unrealistic"
+        "blurry, low quality, distorted, artifacts, double face, triple face, "
+        "unnatural, fake, AI generated, deepfake artifacts, "
+        "cartoon, painting, illustration, anime, 3d render, cgi, "
+        "oversaturated, airbrushed, plastic skin, smooth skin, unrealistic skin, "
+        "visible seams, color mismatch, lighting mismatch, "
+        "caricature, exaggerated features, doll-like, mannequin, "
+        "overprocessed, oversharpened, hdr artifacts, "
+        "watermark, text, logo, signature"
     )
     
     # Gemini

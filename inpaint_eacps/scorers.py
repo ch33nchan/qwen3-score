@@ -222,12 +222,19 @@ class MoondreamScorer:
             enc_result = model.encode_image(result_image)
             
             prompt = (
-                "Evaluate this image for photorealism. Check for: "
-                "artifacts, blurring, unnatural lighting, color mismatches, seams, "
-                "double faces, distorted features, AI-generated look, oversaturation. "
-                "Does it look like a real photograph? "
-                "Rate 0-10: 10 = perfect realism, 5 = mixed, 0 = clearly fake. "
-                "Answer with only the number."
+                "CRITICAL: Evaluate this image STRICTLY for photorealism. "
+                "Look for these FATAL FLAWS that indicate AI/fake: "
+                "1. Plastic or waxy skin texture (like a mannequin) "
+                "2. Airbrushed or over-smoothed skin (no pores visible) "
+                "3. Caricature-like exaggerated features "
+                "4. Visible seams or color boundaries around face "
+                "5. Mismatched lighting between face and background "
+                "6. Unnatural shadows or highlights "
+                "7. Doll-like or CGI appearance "
+                "8. Double features (extra eyes, nose, etc) "
+                "If ANY of these flaws exist, score BELOW 5. "
+                "Only score 8+ if it looks like an UNEDITED photograph. "
+                "Rate 0-10. Answer with only the number."
             )
             
             with torch.inference_mode():
