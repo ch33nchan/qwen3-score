@@ -25,8 +25,8 @@ class ModelConfig:
     """Model configuration."""
     # Qwen Edit
     qwen_model_id: str = "Qwen/Qwen-Image-Edit"
-    num_inference_steps: int = 25  # Lower to preserve more of face swap
-    guidance_scale: float = 3.5  # Lower guidance to preserve face swap better
+    num_inference_steps: int = 15  # MUCH lower - minimal editing
+    guidance_scale: float = 2.5  # Very low - barely touch the face swap
     negative_prompt: str = (
         "blurry, low quality, distorted, artifacts, double face, triple face, "
         "unnatural, fake, AI generated, deepfake artifacts, "
@@ -35,6 +35,7 @@ class ModelConfig:
         "visible seams, color mismatch, lighting mismatch, "
         "caricature, exaggerated features, doll-like, mannequin, "
         "overprocessed, oversharpened, hdr artifacts, "
+        "added facial hair, mustache, beard, stubble, extra hair, "
         "watermark, text, logo, signature"
     )
     

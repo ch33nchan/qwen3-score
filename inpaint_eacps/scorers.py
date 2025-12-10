@@ -58,7 +58,7 @@ class GeminiScorer:
         try:
             client = self._get_client()
             
-            prompt = """You are a professional image quality evaluator. Analyze these images carefully.
+            prompt = """You are a professional VFX quality evaluator. Analyze these images with EXTREME scrutiny.
 
 IMAGE 1 (CHARACTER REFERENCE): The target character whose face should appear in the result.
 IMAGE 2 (ORIGINAL SCENE): The original photograph before editing.
@@ -69,31 +69,39 @@ Evaluate and score each aspect on a 0-10 scale:
 1. IDENTITY MATCH (0-10):
    - Does the face in RESULT match CHARACTER's facial features exactly?
    - Consider: face shape, eyes, nose, mouth, skin tone, age, gender, expression
+   - Check: no added facial hair, no removed features, no age changes
    - Be VERY STRICT: Only 8+ if faces are nearly identical
    - Penalize heavily for mismatched features, wrong age/gender, different person
 
 2. PHOTOREALISM (0-10):
-   - Does RESULT look like a real, unedited photograph?
-   - Check for: AI artifacts, blur, double faces, distorted features, unnatural lighting
-   - Check for: color banding, seams, ghosting, oversaturation, airbrushed look
-   - Check for: unrealistic skin texture, fake-looking hair, artificial shadows
-   - Be EXTREMELY STRICT: Only 9+ for perfect realism, 7+ for good, below 5 for obvious AI
+   - Does RESULT look like a real, unedited photograph taken with a camera?
+   - FATAL FLAWS (score ≤4 if ANY present):
+     * CGI/3D rendered look
+     * Painted or illustrated appearance
+     * Plastic/wax/mannequin skin
+     * Airbrushed or over-smoothed skin
+     * Missing skin pores and texture
+     * Unnatural lighting that doesn't match scene
+     * Visible seams or color boundaries
+     * Added features (facial hair, makeup) not in original
+   - Be EXTREMELY STRICT: Only 9+ for perfect realism, below 6 if it looks AI-edited at all
    - This is the MOST IMPORTANT metric
 
 3. SCENE CONSISTENCY (0-10):
    - Does the edited face blend naturally with the original scene?
    - Check: lighting direction matches, shadows are correct, color temperature matches
-   - Check: style matches (photographic vs painted), resolution matches, focus matches
    - Check: no visible seams or boundaries between edited and original areas
+   - Check: face position and angle match the body
 
 CRITICAL EVALUATION RULES:
-- If you see ANY artifacts, blur, or AI-generated look → REALISM score ≤ 6
+- If face looks CGI, painted, or fake in ANY way → REALISM score ≤ 4
+- If you see artifacts, blur, or AI-generated look → REALISM score ≤ 5
 - If face doesn't match character → IDENTITY score ≤ 5
 - If lighting/shadow doesn't match → CONSISTENCY score ≤ 6
-- Be honest and critical - low scores are better than false positives
+- Be brutally honest - low scores are better than false positives
 
 Respond with ONLY three numbers separated by commas: IDENTITY,REALISM,CONSISTENCY
-Example: 7,8,6
+Example: 7,4,6
 """
             
             response = client.generate_content([

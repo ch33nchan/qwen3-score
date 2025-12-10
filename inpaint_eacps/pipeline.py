@@ -339,7 +339,7 @@ def blend_with_mask(
     output: Image.Image,
     original: Image.Image,
     mask: Image.Image,
-    feather_radius: int = 20,  # Increased for smoother blending
+    feather_radius: int = 30,  # Very aggressive feathering
 ) -> Image.Image:
     """Blend output with original using mask with aggressive feathering."""
     if output.size != original.size:
@@ -347,12 +347,21 @@ def blend_with_mask(
     
     mask_resized = mask.convert("L").resize(original.size, Image.Resampling.LANCZOS)
     
+    # Shrink mask slightly to avoid edge artifacts
+    import numpy as np
+    mask_array = np.array(mask_resized)
+    # Erode mask by 5 pixels
+    import cv2
+    kernel = np.ones((5,5), np.uint8)
+    mask_array = cv2.erode(mask_array, kernel, iterations=1)
+    mask_resized = Image.fromarray(mask_array)
+    
     # Multi-pass feathering for smoother edges
     if feather_radius > 0:
         mask_feathered = mask_resized
         # Apply blur in multiple passes for smoother gradient
-        for _ in range(2):
-            mask_feathered = mask_feathered.filter(ImageFilter.GaussianBlur(radius=feather_radius // 2))
+        for _ in range(3):  # More passes
+            mask_feathered = mask_feathered.filter(ImageFilter.GaussianBlur(radius=feather_radius // 3))
     else:
         mask_feathered = mask_resized
     
@@ -362,15 +371,12 @@ def blend_with_mask(
 def create_inpaint_prompt(character_name: str) -> str:
     """Create prompt for post-faceswap refinement."""
     return (
-        f"RAW photo, DSLR photograph of {character_name}, "
-        f"8k uhd, photorealistic, hyperrealistic, real human skin texture with pores and fine details, "
-        f"natural subsurface scattering, realistic skin imperfections, "
-        f"professional studio lighting matching the scene, "
-        f"perfect color grading, cinematic, "
-        f"seamless face blend with no visible edges or seams, "
-        f"preserve exact facial expression and emotions, "
-        f"preserve tattoos and markings, "
-        f"sharp focus on face, shallow depth of field"
+        f"seamlessly blend the face into the photograph, "
+        f"match skin tone and lighting to the original scene, "
+        f"natural realistic photograph, "
+        f"preserve exact face structure and features, "
+        f"no added features, no facial hair changes, "
+        f"professional color correction only"
     )
 
 
@@ -415,6 +421,21 @@ def run_eacps_inpaint(
     
     # Pre-composite character face onto masked region
     composited_input = composite_character_face_on_mask(init_image, character_image, mask_image)
+    
+    # CRITICAL: Add the raw face swap as a candidate (no diffusion)
+    # This ensures we always have the "pure" InsightFace result
+    swapped_blended = blend_with_mask(swapped_base, init_image, mask_image)
+    scores_raw = scorer.score(swapped_blended, character_image, init_image)
+    potential_raw = scorer.compute_potential(scores_raw, eacps)
+    global_candidates.append(Candidate(
+        image=swapped_blended,
+        seed=0,
+        phase="raw_swap",
+        scores=scores_raw,
+        potential=potential_raw,
+    ))
+    if verbose:
+        print(f"    Raw face swap: Potential={potential_raw:.2f}")
     
     for i in range(eacps.k_global):
         seed = i * 31 + 5000
