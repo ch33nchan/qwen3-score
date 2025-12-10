@@ -68,7 +68,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Inpainting with EACPS")
     
     # Task selection
-    parser.add_argument("--task_id", type=str, required=True, help="Task ID to process")
+    parser.add_argument("--task_id", type=str, nargs='+', required=True, help="Task ID(s) to process")
     parser.add_argument("--from_file", type=str, default="project-label.json", help="JSON file with tasks")
     
     # API keys
@@ -105,29 +105,11 @@ def main():
     cache_dir = Path(args.cache_dir)
     cache_dir.mkdir(parents=True, exist_ok=True)
     
-    # Load task
-    logger.info(f"Loading task {args.task_id} from {args.from_file}")
-    task_data = load_task_from_file(args.from_file, args.task_id)
-    
-    logger.info(f"Task: {task_data['character_name']}")
-    logger.info(f"  init: {task_data['init_image_url'][:50]}...")
-    logger.info(f"  mask: {task_data['mask_image_url'][:50]}...")
-    logger.info(f"  char: {task_data['character_image_url'][:50]}...")
-    
-    # Download images
-    logger.info("Downloading images...")
-    init_image = download_image(task_data["init_image_url"], cache_dir).convert("RGB")
-    mask_image = download_image(task_data["mask_image_url"], cache_dir).convert("L")
-    character_image = download_image(task_data["character_image_url"], cache_dir).convert("RGBA")
-    
-    logger.info(f"  init: {init_image.size}")
-    logger.info(f"  mask: {mask_image.size}")
-    logger.info(f"  char: {character_image.size}")
-    
     # Import pipeline (after arg parsing for faster --help)
     sys.path.insert(0, str(Path(__file__).parent))
     from config import PipelineConfig, EACPSConfig, ModelConfig
-    from pipeline import process_task
+    from pipeline import process_task, QwenEditPipeline
+    from scorers import MultiModelScorer
     
     # Create config
     config = PipelineConfig(
@@ -146,63 +128,107 @@ def main():
     
     if not config.model.gemini_api_key:
         logger.warning("No Gemini API key provided. Scoring will use defaults.")
-    
-    # Process
-    logger.info("=" * 60)
-    logger.info("Starting EACPS inpainting")
-    logger.info("=" * 60)
-    
-    start_time = datetime.now()
-    
-    result = process_task(
-        init_image=init_image,
-        mask_image=mask_image,
-        character_image=character_image,
-        character_name=task_data["character_name"],
-        task_id=task_data["id"],
-        config=config,
-        output_dir=output_dir,
+
+    # Initialize models once
+    logger.info("Initializing models...")
+    qwen_pipe = QwenEditPipeline(config.model.qwen_model_id, config.device)
+    scorer = MultiModelScorer(
+        gemini_api_key=config.model.gemini_api_key,
+        gemini_model=config.model.gemini_model,
+        moondream_model_id=config.model.moondream_model_id,
+        device=config.device,
+        use_gemini=bool(config.model.gemini_api_key),
         use_moondream=args.use_moondream,
     )
+
+    # Ensure args.task_id is a list
+    task_ids = args.task_id if isinstance(args.task_id, list) else [args.task_id]
     
-    elapsed = datetime.now() - start_time
-    
-    # Summary
-    logger.info("=" * 60)
-    logger.info("DONE")
-    logger.info("=" * 60)
-    logger.info(f"Task: {result['task_id']}")
-    logger.info(f"Character: {result['character_name']}")
-    logger.info(f"Best seed: {result['best_seed']} ({result['best_phase']})")
-    logger.info(f"Best potential: {result['best_potential']:.2f}")
-    logger.info(f"Scores: {result['best_scores']}")
-    logger.info(f"Elapsed: {elapsed}")
-    logger.info(f"Output: {result.get('output_dir', output_dir)}")
-    
-    # Auto-push to git
-    try:
-        import subprocess
-        repo_root = Path(__file__).parent.parent
-        
-        logger.info("Pushing results to git...")
-        subprocess.run(
-            ["git", "add", str(output_dir / f"task_{result['task_id']}")],
-            cwd=repo_root,
-            check=False,
-        )
-        subprocess.run(
-            ["git", "commit", "-m", f"Inpaint EACPS result: task {result['task_id']} ({result['character_name']})"],
-            cwd=repo_root,
-            check=False,
-        )
-        subprocess.run(
-            ["git", "push", "origin", "main"],
-            cwd=repo_root,
-            check=False,
-        )
-        logger.info("Git push completed")
-    except Exception as e:
-        logger.warning(f"Git push failed (non-critical): {e}")
+    for task_id in task_ids:
+        try:
+            # Load task
+            logger.info(f"Loading task {task_id} from {args.from_file}")
+            task_data = load_task_from_file(args.from_file, task_id)
+            
+            logger.info(f"Task: {task_data['character_name']}")
+            logger.info(f"  init: {task_data['init_image_url'][:50]}...")
+            logger.info(f"  mask: {task_data['mask_image_url'][:50]}...")
+            logger.info(f"  char: {task_data['character_image_url'][:50]}...")
+            
+            # Download images
+            logger.info("Downloading images...")
+            init_image = download_image(task_data["init_image_url"], cache_dir).convert("RGB")
+            mask_image = download_image(task_data["mask_image_url"], cache_dir).convert("L")
+            character_image = download_image(task_data["character_image_url"], cache_dir).convert("RGBA")
+            
+            logger.info(f"  init: {init_image.size}")
+            logger.info(f"  mask: {mask_image.size}")
+            logger.info(f"  char: {character_image.size}")
+            
+            # Process
+            logger.info("=" * 60)
+            logger.info(f"Starting EACPS inpainting for task {task_id}")
+            logger.info("=" * 60)
+            
+            start_time = datetime.now()
+            
+            result = process_task(
+                init_image=init_image,
+                mask_image=mask_image,
+                character_image=character_image,
+                character_name=task_data["character_name"],
+                task_id=task_data["id"],
+                config=config,
+                output_dir=output_dir,
+                use_moondream=args.use_moondream,
+                qwen_pipe=qwen_pipe,
+                scorer=scorer,
+            )
+            
+            elapsed = datetime.now() - start_time
+            
+            # Summary
+            logger.info("=" * 60)
+            logger.info("DONE")
+            logger.info("=" * 60)
+            logger.info(f"Task: {result['task_id']}")
+            logger.info(f"Character: {result['character_name']}")
+            logger.info(f"Best seed: {result['best_seed']} ({result['best_phase']})")
+            logger.info(f"Best potential: {result['best_potential']:.2f}")
+            logger.info(f"Scores: {result['best_scores']}")
+            logger.info(f"Elapsed: {elapsed}")
+            logger.info(f"Output: {result.get('output_dir', output_dir)}")
+            
+            # Auto-push to git
+            try:
+                import subprocess
+                repo_root = Path(__file__).parent.parent
+                
+                logger.info("Pushing results to git...")
+                subprocess.run(
+                    ["git", "add", str(output_dir / f"task_{result['task_id']}")],
+                    cwd=repo_root,
+                    check=False,
+                )
+                subprocess.run(
+                    ["git", "commit", "-m", f"Inpaint EACPS result: task {result['task_id']} ({result['character_name']})"],
+                    cwd=repo_root,
+                    check=False,
+                )
+                subprocess.run(
+                    ["git", "push", "origin", "main"],
+                    cwd=repo_root,
+                    check=False,
+                )
+                logger.info("Git push completed")
+            except Exception as e:
+                logger.warning(f"Git push failed (non-critical): {e}")
+                
+        except Exception as e:
+            logger.error(f"Error processing task {task_id}: {e}")
+            import traceback
+            traceback.print_exc()
+            continue
 
 
 if __name__ == "__main__":

@@ -512,6 +512,8 @@ def process_task(
     config: PipelineConfig,
     output_dir: Optional[Path] = None,
     use_moondream: bool = True,
+    qwen_pipe: Optional['QwenEditPipeline'] = None,
+    scorer: Optional[MultiModelScorer] = None,
 ) -> Dict[str, Any]:
     """
     Process a single inpainting task.
@@ -519,17 +521,19 @@ def process_task(
     logger.info(f"Processing task {task_id} ({character_name})")
     
     # Initialize pipeline
-    qwen_pipe = QwenEditPipeline(config.model.qwen_model_id, config.device)
+    if qwen_pipe is None:
+        qwen_pipe = QwenEditPipeline(config.model.qwen_model_id, config.device)
     
     # Initialize scorer with Moondream enabled for better realism scoring
-    scorer = MultiModelScorer(
-        gemini_api_key=config.model.gemini_api_key,
-        gemini_model=config.model.gemini_model,
-        moondream_model_id=config.model.moondream_model_id,
-        device=config.device,
-        use_gemini=bool(config.model.gemini_api_key),
-        use_moondream=use_moondream,  # Enabled for better realism and identity scoring
-    )
+    if scorer is None:
+        scorer = MultiModelScorer(
+            gemini_api_key=config.model.gemini_api_key,
+            gemini_model=config.model.gemini_model,
+            moondream_model_id=config.model.moondream_model_id,
+            device=config.device,
+            use_gemini=bool(config.model.gemini_api_key),
+            use_moondream=use_moondream,  # Enabled for better realism and identity scoring
+        )
     
     # Run EACPS
     best_result, all_candidates = run_eacps_inpaint(
