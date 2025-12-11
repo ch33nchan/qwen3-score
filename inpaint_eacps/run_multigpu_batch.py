@@ -93,7 +93,6 @@ def run_gpu_worker(
         cmd.append('--no_moondream')
     
     env = os.environ.copy()
-    env['CUDA_VISIBLE_DEVICES'] = str(gpu_id)
     
     log_file = Path(output_dir) / f"gpu{gpu_id}_log.txt"
     log_file.parent.mkdir(parents=True, exist_ok=True)
@@ -111,13 +110,14 @@ def run_gpu_worker(
     return process
 
 
-def monitor_progress(output_dir: Path, num_tasks: int):
+def monitor_progress(output_dir: Path, num_tasks: int, processes: List):
     """Monitor overall progress across all GPUs."""
     from tqdm import tqdm
     import glob
     
     with tqdm(total=num_tasks * 2, desc="Total outputs", unit="img") as pbar:
         last_count = 0
+        no_progress_count = 0
         while True:
             # Count completed outputs
             pattern = str(output_dir / "gpu*/task_*/result_*.png")
@@ -126,8 +126,22 @@ def monitor_progress(output_dir: Path, num_tasks: int):
             if completed > last_count:
                 pbar.update(completed - last_count)
                 last_count = completed
+                no_progress_count = 0
+            else:
+                no_progress_count += 1
+            
+            # Check if all processes are dead
+            all_dead = all(p.poll() is not None for _, p in processes)
+            if all_dead and completed < num_tasks * 2:
+                logger.error("\nAll workers died! Check logs for errors.")
+                break
             
             if completed >= num_tasks * 2:
+                break
+            
+            # Timeout after 5 minutes of no progress
+            if no_progress_count > 60:
+                logger.warning("\nNo progress for 5 minutes. Check logs.")
                 break
             
             time.sleep(5)
@@ -201,13 +215,16 @@ def main():
     try:
         # Monitor progress
         output_dir = Path(args.output_dir)
-        monitor_progress(output_dir, len(args.task_ids))
+        monitor_progress(output_dir, len(args.task_ids), processes)
         
         # Wait for all processes
         logger.info("\nWaiting for all workers to complete...")
         for gpu_id, process in processes:
-            process.wait()
-            logger.info(f"GPU {gpu_id}: Completed")
+            returncode = process.wait()
+            if returncode != 0:
+                logger.error(f"GPU {gpu_id}: Failed with code {returncode}. Check {output_dir}/gpu{gpu_id}_log.txt")
+            else:
+                logger.info(f"GPU {gpu_id}: Completed")
         
     except KeyboardInterrupt:
         logger.warning("\nInterrupted! Terminating workers...")
