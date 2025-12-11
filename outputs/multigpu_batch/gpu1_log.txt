@@ -1,0 +1,62 @@
+/mnt/data1/srini/qwen3-score/.venv/lib/python3.10/site-packages/torch/cuda/__init__.py:61: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+2025-12-11 03:30:36 | INFO     | ================================================================================
+2025-12-11 03:30:36 | INFO     | BATCH CONFIGURATION
+2025-12-11 03:30:36 | INFO     | ================================================================================
+2025-12-11 03:30:36 | INFO     | Tasks: 3
+2025-12-11 03:30:36 | INFO     | EACPS: K_global=8, M=3, K_local=4
+2025-12-11 03:30:36 | INFO     | Candidates per run: 20
+2025-12-11 03:30:36 | INFO     | Runs per task: 2 (dual output)
+2025-12-11 03:30:36 | INFO     | Gemini calls per task: 40
+2025-12-11 03:30:36 | INFO     | TOTAL expected Gemini calls: 120
+2025-12-11 03:30:36 | INFO     | Moondream: ENABLED
+2025-12-11 03:30:36 | INFO     | Estimated Gemini cost: $0.45
+2025-12-11 03:30:36 | INFO     | ================================================================================
+2025-12-11 03:30:36 | INFO     | Initializing models...
+Batch Progress:   0%|          | 0/3 [00:00<?, ?task/s]2025-12-11 03:30:36 | INFO     | 
+================================================================================
+2025-12-11 03:30:36 | INFO     | TASK 1/3: 71650389
+2025-12-11 03:30:36 | INFO     | ================================================================================
+2025-12-11 03:30:36 | INFO     | ================================================================================
+2025-12-11 03:30:36 | ERROR    | Failed task 71650389: 'name'
+Traceback (most recent call last):
+  File "/mnt/data1/srini/qwen3-score/inpaint_eacps/run_batch_dual.py", line 315, in main
+    result = process_task_dual(
+  File "/mnt/data1/srini/qwen3-score/inpaint_eacps/run_batch_dual.py", line 98, in process_task_dual
+    logger.info(f"Task {task_id}: {task_data['name']}")
+KeyError: 'name'
+2025-12-11 03:30:36 | INFO     | 
+================================================================================
+2025-12-11 03:30:36 | INFO     | TASK 2/3: 71634650
+2025-12-11 03:30:36 | INFO     | ================================================================================
+2025-12-11 03:30:36 | INFO     | ================================================================================
+2025-12-11 03:30:36 | ERROR    | Failed task 71634650: 'name'
+Traceback (most recent call last):
+  File "/mnt/data1/srini/qwen3-score/inpaint_eacps/run_batch_dual.py", line 315, in main
+    result = process_task_dual(
+  File "/mnt/data1/srini/qwen3-score/inpaint_eacps/run_batch_dual.py", line 98, in process_task_dual
+    logger.info(f"Task {task_id}: {task_data['name']}")
+KeyError: 'name'
+2025-12-11 03:30:36 | INFO     | 
+================================================================================
+2025-12-11 03:30:36 | INFO     | TASK 3/3: 71673477
+2025-12-11 03:30:36 | INFO     | ================================================================================
+2025-12-11 03:30:36 | INFO     | ================================================================================
+2025-12-11 03:30:36 | ERROR    | Failed task 71673477: 'name'
+Traceback (most recent call last):
+  File "/mnt/data1/srini/qwen3-score/inpaint_eacps/run_batch_dual.py", line 315, in main
+    result = process_task_dual(
+  File "/mnt/data1/srini/qwen3-score/inpaint_eacps/run_batch_dual.py", line 98, in process_task_dual
+    logger.info(f"Task {task_id}: {task_data['name']}")
+KeyError: 'name'
+Batch Progress: 100%|██████████| 3/3 [00:00<00:00, 690.57task/s]
+2025-12-11 03:30:36 | INFO     | 
+================================================================================
+2025-12-11 03:30:36 | INFO     | BATCH COMPLETE
+2025-12-11 03:30:36 | INFO     | ================================================================================
+2025-12-11 03:30:36 | INFO     | Processed: 0/3 tasks
+2025-12-11 03:30:36 | INFO     | Total Gemini API calls: 0
+2025-12-11 03:30:36 | INFO     | Actual cost: $0.00
+2025-12-11 03:30:36 | INFO     | Total time: 0:00:00.005573
+2025-12-11 03:30:36 | INFO     | Output directory: outputs/multigpu_batch/gpu1
+2025-12-11 03:30:36 | INFO     | Summary saved: outputs/multigpu_batch/gpu1/batch_summary.json
