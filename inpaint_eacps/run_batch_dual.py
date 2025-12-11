@@ -69,12 +69,12 @@ def download_image(url: str, cache_dir: Path) -> Image.Image:
 
 
 def load_task_from_file(filepath: str, task_id: str) -> dict:
-    """Load a specific task from JSON file."""
+    """Load a specific task from Label Studio JSON file."""
     with open(filepath) as f:
         data = json.load(f)
     
     for item in data:
-        item_data = item.get("data", item)
+        item_data = item.get("data", {})
         if str(item_data.get("id")) == str(task_id):
             return item_data
     
@@ -95,13 +95,13 @@ def process_task_dual(
     """Process single task with dual output and track API calls."""
     
     logger.info("=" * 80)
-    logger.info(f"Task {task_id}: {task_data['name']}")
+    logger.info(f"Task {task_id}: {task_data.get('character_name', 'Unknown')}")
     logger.info("=" * 80)
     
-    # Download images
-    init_image = download_image(task_data["init_image"], cache_dir)
-    mask_image = download_image(task_data["mask"], cache_dir)
-    character_image = download_image(task_data["character_image"], cache_dir)
+    # Download images (Label Studio format)
+    init_image = download_image(task_data["init_image_url"], cache_dir)
+    mask_image = download_image(task_data["mask_image_url"], cache_dir)
+    character_image = download_image(task_data["character_image_url"], cache_dir)
     
     task_dir = output_dir / f"task_{task_id}"
     task_dir.mkdir(parents=True, exist_ok=True)
@@ -125,7 +125,7 @@ def process_task_dual(
         init_image=init_image,
         mask_image=mask_image,
         character_image=character_image,
-        character_name=task_data["name"],
+        character_name=task_data.get("character_name", "character"),
         qwen_pipe=qwen_pipe,
         scorer=scorer,
         config=config,
@@ -153,7 +153,7 @@ def process_task_dual(
         init_image=init_image,
         mask_image=mask_image,
         character_image=character_image,
-        character_name=task_data["name"],
+        character_name=task_data.get("character_name", "character"),
         qwen_pipe=qwen_pipe,
         scorer=scorer,
         config=config,
@@ -183,7 +183,8 @@ def process_task_dual(
     # Save metrics
     result = {
         "task_id": task_id,
-        "character_name": task_data["name"],
+        "character_name": task_data.get("character_name", "Unknown"),
+        "character_id": task_data.get("character_id"),
         "init_hair": {
             "seed": best_cand_init.seed,
             "phase": best_cand_init.phase,
