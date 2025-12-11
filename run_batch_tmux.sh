@@ -1,8 +1,13 @@
 #!/bin/bash
 # Run batch dual output processing in tmux with progress tracking
-# Usage: ./run_batch_tmux.sh
+# Usage: ./run_batch_tmux.sh [single|multi]
+# single: Run on single GPU (default)
+# multi: Run on multiple GPUs (auto-detect and distribute)
 
 set -e
+
+# Mode selection
+MODE="${1:-single}"
 
 # Task IDs
 TASK_IDS="71650389 71678832 71680285 71634650 71630498 71656881 71673477"
@@ -40,6 +45,7 @@ fi
 # Show configuration
 tmux send-keys -t $SESSION "echo '========================================'" C-m
 tmux send-keys -t $SESSION "echo 'EACPS Batch Dual Output Processing'" C-m
+tmux send-keys -t $SESSION "echo 'Mode: $MODE'" C-m
 tmux send-keys -t $SESSION "echo '========================================'" C-m
 tmux send-keys -t $SESSION "echo 'Tasks: 7'" C-m
 tmux send-keys -t $SESSION "echo 'Runs per task: 2 (init hair + char hair)'" C-m
@@ -49,10 +55,17 @@ tmux send-keys -t $SESSION "echo ''" C-m
 tmux send-keys -t $SESSION "sleep 2" C-m
 
 # Run the batch script
-CMD="python3 inpaint_eacps/run_batch_dual.py \
-  --task_ids $TASK_IDS \
-  --gemini_api_key \$GEMINI_API_KEY \
-  --output_dir outputs/dual_hair_batch_$(date +%Y%m%d_%H%M%S)"
+if [ "$MODE" = "multi" ]; then
+    CMD="python3 inpaint_eacps/run_multigpu_batch.py \
+      --task_ids $TASK_IDS \
+      --gemini_api_key \$GEMINI_API_KEY \
+      --output_dir outputs/multigpu_batch_$(date +%Y%m%d_%H%M%S)"
+else
+    CMD="python3 inpaint_eacps/run_batch_dual.py \
+      --task_ids $TASK_IDS \
+      --gemini_api_key \$GEMINI_API_KEY \
+      --output_dir outputs/dual_hair_batch_$(date +%Y%m%d_%H%M%S)"
+fi
 
 tmux send-keys -t $SESSION "$CMD" C-m
 
