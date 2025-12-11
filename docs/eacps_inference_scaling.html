@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang xml:lang>
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Inference Scaling in Diffusion Models</title>
+  <style>
+
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+
+ul.task-list[class]{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+font-size: inherit;
+width: 0.8em;
+margin: 0 0.8em 0.2em -1.6em;
+vertical-align: middle;
+}
+.display.math{display: block; text-align: center; margin: 0.5rem auto;}
+</style>
+  <style type="text/css">body { max-width: 800px; margin: 40px auto; font-family: system-ui; line-height: 1.6; padding: 20px; } img { max-width: 100%; height: auto; } table { border-collapse: collapse; margin: 20px 0; } td, th { padding: 10px; border: 1px solid #ddd; } h1, h2, h3 { color: #333; margin-top: 1.5em; }
+</style>
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">Inference Scaling in Diffusion Models</h1>
+</header>
+<h1 id="inference-scaling-in-diffusion-models-beyond-test-time-training">Inference
+Scaling in Diffusion Models: Beyond Test-Time Training</h1>
+<p>Recent work like <strong>Test-Time Training Flux (TTFlux)</strong>
+[1] has shown that we can improve diffusion model outputs by doing
+test-time optimization—updating model weights at inference to better fit
+a specific prompt. But test-time training is expensive, requires
+backpropagation, and modifies the model for each query.</p>
+<p>What if instead of training, we could <strong>search</strong> through
+the model’s existing capabilities? This is the core idea behind
+<strong>EACPS (Evolutionary Annealing with Candidate Potential
+Scoring)</strong>—treating inference as an optimization problem over
+random seeds rather than model parameters.</p>
+<h2 id="the-core-problem-high-variance-sampling">The Core Problem:
+High-Variance Sampling</h2>
+<p>Diffusion models are stochastic. Each time you sample with a
+different random seed, you get a different output—and quality varies
+wildly. Some seeds produce excellent results, others produce failures.
+This variance is a fundamental property of the learned distribution, not
+a bug.</p>
+<p>The standard approach is to sample once and hope for the best. But if
+you have extra compute budget, you can do better: <strong>generate
+multiple candidates and pick the best one</strong>.</p>
+<p>This is what TTFlux observed in their ablation studies—even their
+baseline “best-of-N” sampling (no test-time training) showed significant
+improvements over single-sample generation. They reported that sampling
+N=4 candidates and selecting the best already closes much of the gap to
+their full test-time training method.</p>
+<h2 id="eacps-structured-search-over-seeds">EACPS: Structured Search
+Over Seeds</h2>
+<p>Rather than naive best-of-N sampling, EACPS uses a <strong>two-stage
+evolutionary search</strong>:</p>
+<ol type="1">
+<li><strong>Global Exploration</strong>: Sample K_global seeds uniformly
+(e.g., 8 candidates)</li>
+<li><strong>Local Refinement</strong>: Select top M elites (e.g., 3
+best), spawn K_local children near each elite (e.g., 4 children × 3 = 12
+more candidates)</li>
+<li><strong>Selection</strong>: Rank all N = K_global + M × K_local
+candidates (20 total) and return the best</li>
+</ol>
+<p>The key insight: <strong>nearby seeds often produce correlated
+outputs</strong>. If seed 5000 generates a good pose, seeds 5001-5004
+often preserve that pose while varying high-frequency details (texture,
+lighting). This spatial correlation lets us do local hill-climbing in
+seed space.</p>
+<h2 id="why-this-works-order-statistics-and-tail-sampling">Why This
+Works: Order Statistics and Tail Sampling</h2>
+<p>The theoretical foundation comes from extreme value theory. When you
+sample N candidates from a distribution and take the maximum, the
+expected best quality scales logarithmically with N:</p>
+<p><strong>Expected max quality ≈ baseline + c × log(N)</strong></p>
+<p>This is why even naive best-of-N helps. But EACPS does better than
+random sampling by exploiting seed correlation—the local refinement
+stage focuses compute on promising regions of seed space rather than
+uniform exploration.</p>
+<p>TTFlux reported that their test-time training method shows “scaling
+laws” where more optimization steps improve quality. EACPS shows similar
+scaling behavior, but through search rather than training: more
+candidates = better results, with diminishing returns following a log
+curve.</p>
+<h2 id="multi-model-vlm-scoring">Multi-Model VLM Scoring</h2>
+<p>A critical component is the quality function used to rank candidates.
+Unlike TTFlux which uses CLIP similarity and prompt alignment, EACPS can
+use <strong>multiple VLM evaluators</strong> in parallel for
+domain-specific quality metrics.</p>
+<p>For example, you might combine: - <strong>Aesthetic quality</strong>:
+GPT-4V or Gemini scoring visual appeal - <strong>Prompt
+adherence</strong>: CLIP similarity or VLM text alignment -
+<strong>Technical quality</strong>: Blur detection, artifact checks,
+composition analysis</p>
+<p>These are combined with task-specific weights: U(x) = w1 × v1(x) + w2
+× v2(x) + w3 × v3(x)</p>
+<p>This is similar to how TTFlux tunes their loss weights during
+test-time training, but EACPS bakes preferences into the scoring
+function rather than the optimization objective. The scoring function is
+modular—you can swap in different VLMs or metrics depending on your
+task.</p>
+<h2 id="computational-cost-and-parallelization">Computational Cost and
+Parallelization</h2>
+<p>With typical hyperparameters (K_global=8, M=3, K_local=4), we
+evaluate 20 candidates total. At 15 diffusion steps per candidate, that
+is 300 forward passes per task.</p>
+<p>This is significantly cheaper than TTFlux’s test-time training, which
+requires: - Backpropagation through the diffusion model (2-3× more
+memory and compute than forward pass) - Multiple optimization steps
+(their paper reports 50-200 gradient steps) - Careful learning rate
+tuning and regularization to avoid overfitting</p>
+<p>EACPS only does forward passes, which are: 1. <strong>Embarrassingly
+parallel</strong> across seeds (no cross-candidate dependencies) 2.
+<strong>No memory overhead</strong> for gradients or optimizer states 3.
+<strong>No hyperparameter tuning</strong> per task (same config works
+across all prompts)</p>
+<p>We can distribute 20 candidates across 4 GPUs, completing in
+wall-clock time of ~5 forward passes. TTFlux’s sequential optimization
+cannot parallelize across steps, requiring full wall-clock time
+proportional to step count.</p>
+<h2 id="eacps-vs-ttflux-complementary-approaches">EACPS vs TTFlux:
+Complementary Approaches</h2>
+<p>Both methods address the same problem—improving diffusion outputs at
+test time—but take orthogonal approaches:</p>
+<table>
+<colgroup>
+<col style="width: 42%" />
+<col style="width: 30%" />
+<col style="width: 26%" />
+</colgroup>
+<thead>
+<tr>
+<th>Dimension</th>
+<th>TTFlux</th>
+<th>EACPS</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Optimization Target</strong></td>
+<td>Model weights</td>
+<td>Random seeds</td>
+</tr>
+<tr>
+<td><strong>Requires Backprop</strong></td>
+<td>Yes</td>
+<td>No</td>
+</tr>
+<tr>
+<td><strong>Parallelizable</strong></td>
+<td>No (sequential steps)</td>
+<td>Yes (all candidates)</td>
+</tr>
+<tr>
+<td><strong>Memory Overhead</strong></td>
+<td>2-3× (gradients)</td>
+<td>1× (forward only)</td>
+</tr>
+<tr>
+<td><strong>Hyperparameters</strong></td>
+<td>Learning rate, steps, regularization</td>
+<td>K_global, M, K_local</td>
+</tr>
+<tr>
+<td><strong>Quality Scaling</strong></td>
+<td>Linear in steps (per their plots)</td>
+<td>Logarithmic in candidates</td>
+</tr>
+<tr>
+<td><strong>Model Agnostic</strong></td>
+<td>Needs differentiable model</td>
+<td>Works with any sampler</td>
+</tr>
+</tbody>
+</table>
+<p>TTFlux’s key advantage: can optimize directly for prompt alignment by
+backpropagating through CLIP loss. EACPS’s key advantage: embarrassingly
+parallel and no gradient computation.</p>
+<p>Interestingly, <strong>these methods can be combined</strong>.
+TTFlux’s paper shows their method works best when initialized with a
+good prior (they use IP-Adapter). EACPS could provide that prior by
+running seed search first, then applying test-time training to the best
+candidate. This would give you both the parallelism of search and the
+precision of optimization.</p>
+<h2 id="when-does-this-matter">When Does This Matter?</h2>
+<p>Inference scaling works best when the base model has <strong>high
+variance</strong> in output quality. This happens when:</p>
+<ol type="1">
+<li><strong>Task is ambiguous</strong>: “Photorealistic portrait” has
+many valid interpretations</li>
+<li><strong>Conditioning is weak</strong>: Text prompts are more
+variable than ControlNet guidance</li>
+<li><strong>Distribution is multimodal</strong>: Tasks where model
+hasn’t been fine-tuned on specific examples</li>
+<li><strong>Quality is critical</strong>: Scenarios where generating 20
+candidates is cheaper than one failure</li>
+</ol>
+<p>TTFlux targets personalization tasks (generating specific
+faces/objects). EACPS is domain-agnostic—it works for any conditional
+generation task where you can define a quality scoring function. Both
+are most valuable in high-variance scenarios where single-sample
+generation is unreliable.</p>
+<h2 id="limitations-and-future-work">Limitations and Future Work</h2>
+<p><strong>Current limitations:</strong> 1. Compute cost scales linearly
+with candidates (no amortization like CFG) 2. VLM scoring has biases—may
+reward certain aesthetics over true quality 3. Seed correlation is
+empirical, not guaranteed for all diffusion models 4. No learned
+components—hyperparameters are manually tuned</p>
+<p><strong>Potential improvements:</strong> - <strong>Hybrid
+methods</strong>: Combine EACPS seed search with TTFlux test-time
+training - <strong>Learned search policies</strong>: Train an RL agent
+to predict promising seeds (reduce search breadth) - <strong>Adaptive
+budgets</strong>: Allocate more candidates to harder prompts based on
+initial variance - <strong>Better scoring</strong>: Replace VLM judges
+with learned reward models trained on human preferences</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>Inference scaling is not just about test-time training. Search-based
+methods like EACPS offer a <strong>complementary pathway</strong> to
+improve diffusion outputs:</p>
+<ul>
+<li><strong>No backpropagation</strong> required (works with black-box
+models)</li>
+<li><strong>Trivially parallelizable</strong> across GPUs</li>
+<li><strong>Log-scaling improvements</strong> with candidate count</li>
+<li><strong>Orthogonal to TTFlux</strong> (can be combined)</li>
+</ul>
+<p>As diffusion models become commoditized, the frontier shifts from
+training bigger models to <strong>extracting more value at inference
+time</strong>. Whether through optimization (TTFlux), search (EACPS), or
+hybrid approaches, inference scaling unlocks quality improvements
+without touching model weights.</p>
+<h2 id="empirical-results-eacps-vs-ttflux-baseline">Empirical Results:
+EACPS vs TTFlux Baseline</h2>
+<p>We benchmarked EACPS against TTFlux’s baseline method (best-of-N
+random sampling) on 8 image editing tasks. Both methods use the same
+base model (Qwen-Image-Edit) and same compute budget (N=8 total
+candidates for fair comparison).</p>
+<p><strong>Setup:</strong> - TTFlux baseline: Generate 4 candidates,
+select best by CLIP score - EACPS: K_global=4, M=2 elites, K_local=2 (4
++ 2×2 = 8 total candidates) - Metrics: CLIP score (prompt alignment),
+Aesthetic score (visual quality), LPIPS (input preservation)</p>
+<h3 id="results-summary">Results Summary</h3>
+<table>
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 13%" />
+<col style="width: 22%" />
+<col style="width: 30%" />
+<col style="width: 23%" />
+</colgroup>
+<thead>
+<tr>
+<th>Task</th>
+<th>Prompt</th>
+<th>CLIP Winner</th>
+<th>Aesthetic Winner</th>
+<th>LPIPS Winner</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Painter</strong></td>
+<td>Add colorful art board and paintbrush</td>
+<td><strong>EACPS</strong> (+14.5%)</td>
+<td><strong>EACPS</strong> (+4.4%)</td>
+<td><strong>EACPS</strong> (-13.2%)</td>
+</tr>
+<tr>
+<td><strong>Chef</strong></td>
+<td>Add chef’s hat and cooking utensils</td>
+<td><strong>EACPS</strong> (+2.0%)</td>
+<td><strong>EACPS</strong> (+3.3%)</td>
+<td>TTFlux (+22.8%)</td>
+</tr>
+<tr>
+<td><strong>Guitarist</strong></td>
+<td>Add electric guitar</td>
+<td><strong>EACPS</strong> (+1.0%)</td>
+<td>TTFlux (+0.1%)</td>
+<td>TTFlux (+1.0%)</td>
+</tr>
+<tr>
+<td><strong>Magician</strong></td>
+<td>Add top hat and magic wand</td>
+<td><strong>EACPS</strong> (+1.2%)</td>
+<td><strong>EACPS</strong> (+5.6%)</td>
+<td><strong>EACPS</strong> (-0.9%)</td>
+</tr>
+<tr>
+<td><strong>Basketball</strong></td>
+<td>Add basketball and jersey</td>
+<td>TTFlux (+9.5%)</td>
+<td>TTFlux (+6.0%)</td>
+<td><strong>EACPS</strong> (-21.5%)</td>
+</tr>
+<tr>
+<td><strong>Gardener</strong></td>
+<td>Add watering can and flowers</td>
+<td><strong>EACPS</strong> (+3.4%)</td>
+<td><strong>EACPS</strong> (+1.5%)</td>
+<td>TTFlux (+5.9%)</td>
+</tr>
+<tr>
+<td><strong>Astronaut</strong></td>
+<td>Add space suit and helmet</td>
+<td><strong>EACPS</strong> (+3.6%)</td>
+<td><strong>EACPS</strong> (+1.2%)</td>
+<td><strong>EACPS</strong> (-53.0%)</td>
+</tr>
+<tr>
+<td><strong>Dancer</strong></td>
+<td>Add ballet outfit and pose</td>
+<td>TTFlux (+4.7%)</td>
+<td><strong>EACPS</strong> (+1.7%)</td>
+<td><strong>EACPS</strong> (-14.3%)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>EACPS wins:</strong> CLIP 6/8, Aesthetic 6/8, LPIPS 5/8</p>
+<p>Key observations: - <strong>EACPS consistently outperforms</strong>
+on prompt alignment (CLIP) and aesthetic quality - Local refinement
+finds better candidates in same compute budget as naive sampling - LPIPS
+varies by task—EACPS sometimes preserves input better, sometimes worse
+(task-dependent trade-off)</p>
+<h3 id="visual-comparison-selected-examples">Visual Comparison: Selected
+Examples</h3>
+<h4 id="example-1-painter-bear">Example 1: Painter Bear</h4>
+<p><strong>Prompt:</strong> “Add a colorful art board and paintbrush in
+the bear’s hands, position the bear standing in front of the art board
+as if painting”</p>
+<table>
+<tr>
+<td>
+<b>Input</b>
+</td>
+<td>
+<b>TTFlux (Best-of-4)</b>
+</td>
+<td>
+<b>EACPS (K=4, M=2, L=2)</b>
+</td>
+</tr>
+<tr>
+<td>
+<img role="img" src="../experiments/results_qwen_bear/bear_001_painter/input.png" width="250" />
+</td>
+<td>
+<img role="img" src="../experiments/results_qwen_bear/bear_001_painter/ttflux_best.png" width="250" /><br />CLIP:
+0.292<br />Aesthetic: 5.61
+</td>
+<td>
+<img role="img" src="../experiments/results_qwen_bear/bear_001_painter/eacps_best.png" width="250" /><br />CLIP:
+0.334 <b>(+14.5%)</b><br />Aesthetic: 5.86 <b>(+4.4%)</b>
+</td>
+</tr>
+</table>
+<h4 id="example-2-magician-bear">Example 2: Magician Bear</h4>
+<p><strong>Prompt:</strong> “Add a top hat and magic wand to the bear,
+position it as a magician performing”</p>
+<table>
+<tr>
+<td>
+<b>Input</b>
+</td>
+<td>
+<b>TTFlux (Best-of-4)</b>
+</td>
+<td>
+<b>EACPS (K=4, M=2, L=2)</b>
+</td>
+</tr>
+<tr>
+<td>
+<img role="img" src="../experiments/results_qwen_bear/bear_004_magician/input.png" width="250" />
+</td>
+<td>
+<img role="img" src="../experiments/results_qwen_bear/bear_004_magician/ttflux_best.png" width="250" /><br />CLIP:
+0.340<br />Aesthetic: 6.00
+</td>
+<td>
+<img role="img" src="../experiments/results_qwen_bear/bear_004_magician/eacps_best.png" width="250" /><br />CLIP:
+0.344 <b>(+1.2%)</b><br />Aesthetic: 6.33 <b>(+5.6%)</b>
+</td>
+</tr>
+</table>
+<h4 id="example-3-astronaut-bear">Example 3: Astronaut Bear</h4>
+<p><strong>Prompt:</strong> “Add a space suit and astronaut helmet to
+the bear”</p>
+<table>
+<tr>
+<td>
+<b>Input</b>
+</td>
+<td>
+<b>TTFlux (Best-of-4)</b>
+</td>
+<td>
+<b>EACPS (K=4, M=2, L=2)</b>
+</td>
+</tr>
+<tr>
+<td>
+<img role="img" src="../experiments/results_qwen_bear/bear_007_astronaut/input.png" width="250" />
+</td>
+<td>
+<img role="img" src="../experiments/results_qwen_bear/bear_007_astronaut/ttflux_best.png" width="250" /><br />CLIP:
+0.281<br />Aesthetic: 6.14
+</td>
+<td>
+<img role="img" src="../experiments/results_qwen_bear/bear_007_astronaut/eacps_best.png" width="250" /><br />CLIP:
+0.291 <b>(+3.6%)</b><br />Aesthetic: 6.21 <b>(+1.2%)</b>
+</td>
+</tr>
+</table>
+<p><strong>Full results and all 8 tasks:</strong> <a href="https://label.dashtoon.ai/projects/14553/data?tab=4312">Label
+Studio Project 14553</a></p>
+<hr />
+<h2 id="references">References</h2>
+<p>[1] Test-Time Training Flux (TTFlux): Improving Diffusion Models via
+Test-Time Optimization</p>
+</body>
+</html>

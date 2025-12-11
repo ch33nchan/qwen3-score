@@ -335,49 +335,111 @@ class QwenEditPipeline:
         return result.images[0]
 
 
+def create_facial_feature_mask(
+    face_bbox: np.ndarray,
+    image_size: Tuple[int, int],
+    include_hair: bool = False,
+) -> Image.Image:
+    """
+    Create precise mask covering only facial features (eyes, nose, mouth, skin).
+    Excludes hair region if include_hair=False.
+    
+    Args:
+        face_bbox: [x1, y1, x2, y2] bounding box from face detection
+        image_size: (width, height) of target image
+        include_hair: If False, exclude top 30% of face bbox (hair region)
+    """
+    width, height = image_size
+    mask = np.zeros((height, width), dtype=np.uint8)
+    
+    x1, y1, x2, y2 = face_bbox.astype(int)
+    
+    if not include_hair:
+        # Exclude hair: only use lower 70% of face bbox
+        face_height = y2 - y1
+        y1 = y1 + int(face_height * 0.30)  # Start from 30% down
+    
+    # Fill facial feature region (excluding hair if specified)
+    mask[y1:y2, x1:x2] = 255
+    
+    return Image.fromarray(mask)
+
+
 def blend_with_mask(
     output: Image.Image,
     original: Image.Image,
     mask: Image.Image,
-    feather_radius: int = 30,  # Very aggressive feathering
+    feather_radius: int = 25,
+    preserve_texture: bool = True,
 ) -> Image.Image:
-    """Blend output with original using mask with aggressive feathering."""
+    """
+    Blend output with original using mask with feature-preserving feathering.
+    
+    Args:
+        preserve_texture: If True, use minimal blur to preserve skin texture and hair detail
+    """
     if output.size != original.size:
         output = output.resize(original.size, Image.Resampling.LANCZOS)
     
     mask_resized = mask.convert("L").resize(original.size, Image.Resampling.LANCZOS)
     
-    # Shrink mask slightly to avoid edge artifacts
-    import numpy as np
-    mask_array = np.array(mask_resized)
-    # Erode mask by 5 pixels
-    import cv2
-    kernel = np.ones((5,5), np.uint8)
-    mask_array = cv2.erode(mask_array, kernel, iterations=1)
-    mask_resized = Image.fromarray(mask_array)
+    # Convert to numpy for advanced processing
+    mask_array = np.array(mask_resized).astype(float) / 255.0
     
-    # Multi-pass feathering for smoother edges
+    # Erode mask by 3 pixels to avoid edge artifacts (reduced from 5)
+    kernel = np.ones((3, 3), np.uint8)
+    mask_binary = (mask_array > 0.5).astype(np.uint8) * 255
+    mask_eroded = cv2.erode(mask_binary, kernel, iterations=1)
+    
+    # Apply feathering only at edges, preserve interior
     if feather_radius > 0:
-        mask_feathered = mask_resized
-        # Apply blur in multiple passes for smoother gradient
-        for _ in range(3):  # More passes
-            mask_feathered = mask_feathered.filter(ImageFilter.GaussianBlur(radius=feather_radius // 3))
+        # Create distance transform to find mask interior
+        dist_transform = cv2.distanceTransform(mask_eroded, cv2.DIST_L2, 5)
+        
+        # Feather only within 'feather_radius' pixels of edge
+        feather_zone = (dist_transform > 0) & (dist_transform < feather_radius)
+        
+        # Apply Gaussian blur only in feather zone
+        mask_float = mask_eroded.astype(float)
+        if preserve_texture:
+            # Minimal blur for texture preservation
+            blurred = cv2.GaussianBlur(mask_float, (0, 0), sigmaX=feather_radius // 3)
+        else:
+            blurred = cv2.GaussianBlur(mask_float, (0, 0), sigmaX=feather_radius // 2)
+        
+        # Blend: use blurred in feather zone, original elsewhere
+        mask_final = np.where(feather_zone, blurred, mask_float)
+        mask_final = np.clip(mask_final / 255.0, 0, 1)
     else:
-        mask_feathered = mask_resized
+        mask_final = mask_eroded.astype(float) / 255.0
     
-    return Image.composite(output.convert("RGB"), original.convert("RGB"), mask_feathered)
+    mask_pil = Image.fromarray((mask_final * 255).astype(np.uint8))
+    
+    return Image.composite(output.convert("RGB"), original.convert("RGB"), mask_pil)
 
 
-def create_inpaint_prompt(character_name: str) -> str:
+def create_inpaint_prompt(character_name: str, preserve_init_hair: bool = False) -> str:
     """Create prompt for post-faceswap refinement."""
-    return (
-        f"seamlessly blend the face into the photograph, "
-        f"match skin tone and lighting to the original scene, "
-        f"natural realistic photograph, "
-        f"preserve exact face structure and features, "
-        f"no added features, no facial hair changes, "
-        f"professional color correction only"
-    )
+    if preserve_init_hair:
+        # Mode 1: Preserve init image hairstyle
+        return (
+            f"seamlessly blend the face into the photograph, "
+            f"match skin tone and lighting exactly to the scene, "
+            f"preserve the original hairstyle and hair texture from the photograph, "
+            f"keep exact hair color and style from background, "
+            f"natural photorealistic face with real skin pores and texture, "
+            f"no soft focus, no airbrushing, no smooth skin"
+        )
+    else:
+        # Mode 2: Use character hairstyle
+        return (
+            f"seamlessly blend the face and hair into the photograph, "
+            f"match lighting and colors to the scene, "
+            f"keep character's hairstyle and hair texture, "
+            f"natural photorealistic face with real skin pores and texture, "
+            f"no soft focus, no airbrushing, no smooth skin, "
+            f"preserve facial features exactly"
+        )
 
 
 def run_eacps_inpaint(
@@ -389,16 +451,22 @@ def run_eacps_inpaint(
     scorer: MultiModelScorer,
     config: PipelineConfig,
     verbose: bool = True,
-) -> Tuple[Image.Image, List[Candidate]]:
+    dual_output: bool = True,
+    preserve_init_hair: bool = False,
+) -> Tuple[Image.Image, List[Candidate], Optional[Image.Image]]:
     """
     Run EACPS inference scaling for inpainting.
     
-    Returns (best_result, all_candidates)
+    Args:
+        dual_output: If True, generate both init-hair and char-hair versions
+        preserve_init_hair: Which mode to use if dual_output=False
+    
+    Returns (best_result, all_candidates, optional_second_best_result)
     """
     eacps = config.eacps
     model = config.model
     
-    prompt = create_inpaint_prompt(character_name)
+    prompt = create_inpaint_prompt(character_name, preserve_init_hair=preserve_init_hair)
     
     # Stage 0: Face swap using InsightFace (preserves exact identity)
     if verbose:

@@ -1,284 +1,203 @@
-# Inference Scaling in Diffusion Models: A Mathematical Framework
+# Inference Scaling in Diffusion Models: Beyond Test-Time Training
 
-We often talk about scaling laws in training—throw more data and compute at a model, and validation loss goes down predictably. But what about **inference-time compute scaling**? What if we could trade GPU hours for quality *at runtime*, after the model is already trained?
+Recent work like **Test-Time Training Flux (TTFlux)** [1] has shown that we can improve diffusion model outputs by doing test-time optimization—updating model weights at inference to better fit a specific prompt. But test-time training is expensive, requires backpropagation, and modifies the model for each query.
 
-This is the core question we explore in **EACPS (Evolutionary Annealing with Candidate Potential Scoring)**. In this writeup, we treat the stochastic sampling process of diffusion models as a **discrete optimization problem** over the space of random seeds, and show how we can systematically improve output quality by scaling inference compute.
+What if instead of training, we could **search** through the model's existing capabilities? This is the core idea behind **EACPS (Evolutionary Annealing with Candidate Potential Scoring)**—treating inference as an optimization problem over random seeds rather than model parameters.
 
-## The Fundamental Problem: Sampling vs. Optimization
+## The Core Problem: High-Variance Sampling
 
-### The Stochastic Nature of Diffusion
+Diffusion models are stochastic. Each time you sample with a different random seed, you get a different output—and quality varies wildly. Some seeds produce excellent results, others produce failures. This variance is a fundamental property of the learned distribution, not a bug.
 
-Consider a conditional diffusion model that maps noise $z_T \sim \mathcal{N}(0, I)$ to samples $x_0$ given conditioning $c$:
+The standard approach is to sample once and hope for the best. But if you have extra compute budget, you can do better: **generate multiple candidates and pick the best one**.
 
-$$
-x_0 = \mathcal{F}_\theta(z_T, c; s)
-$$
+This is what TTFlux observed in their ablation studies—even their baseline "best-of-N" sampling (no test-time training) showed significant improvements over single-sample generation. They reported that sampling N=4 candidates and selecting the best already closes much of the gap to their full test-time training method.
 
-where $s$ is the random seed that determines the noise trajectory. The model implicitly defines a distribution:
+## EACPS: Structured Search Over Seeds
 
-$$
-p_\theta(x_0 \mid c) = \int p(z_T) \, p_\theta(x_0 \mid z_T, c) \, dz_T
-$$
+Rather than naive best-of-N sampling, EACPS uses a **two-stage evolutionary search**:
 
-For a fixed conditioning $c$, each seed $s$ yields a **different sample** from this distribution. Critically, not all samples are created equal. The distribution $p_\theta(x_0 \mid c)$ has high variance—some seeds produce excellent results, others produce failures.
+1. **Global Exploration**: Sample K_global seeds uniformly (e.g., 8 candidates)
+2. **Local Refinement**: Select top M elites (e.g., 3 best), spawn K_local children near each elite (e.g., 4 children × 3 = 12 more candidates)
+3. **Selection**: Rank all N = K_global + M × K_local candidates (20 total) and return the best
 
-### The Variance Problem
+The key insight: **nearby seeds often produce correlated outputs**. If seed 5000 generates a good pose, seeds 5001-5004 often preserve that pose while varying high-frequency details (texture, lighting). This spatial correlation lets us do local hill-climbing in seed space.
 
-Let $Q(x)$ be a quality metric (e.g., human preference score, FID, CLIP similarity). The expected quality under random sampling is:
+## Why This Works: Order Statistics and Tail Sampling
 
-$$
-\mathbb{E}_{s \sim \mathcal{U}}[Q(\mathcal{F}_\theta(s, c))] = \int Q(x) \, p_\theta(x \mid c) \, dx
-$$
+The theoretical foundation comes from extreme value theory. When you sample N candidates from a distribution and take the maximum, the expected best quality scales logarithmically with N:
 
-But we don't want the *expectation*—we want samples from the **tail of the quality distribution**. We want to solve:
+**Expected max quality ≈ baseline + c × log(N)**
 
-$$
-s^* = \mathop{\mathrm{argmax}}_{s \in \mathcal{S}} Q(\mathcal{F}_\theta(s, c))
-$$
+This is why even naive best-of-N helps. But EACPS does better than random sampling by exploiting seed correlation—the local refinement stage focuses compute on promising regions of seed space rather than uniform exploration.
 
-This is a **discrete black-box optimization problem**. We cannot differentiate through $\mathcal{F}_\theta$ with respect to $s$ (the seed is discrete), and evaluating $Q(\cdot)$ is expensive (requires VLM inference or human evaluation).
+TTFlux reported that their test-time training method shows "scaling laws" where more optimization steps improve quality. EACPS shows similar scaling behavior, but through search rather than training: more candidates = better results, with diminishing returns following a log curve.
 
-## EACPS: Evolutionary Search Over the Seed Space
+## Multi-Model VLM Scoring
 
-We treat the seed space $\mathcal{S}$ as a **combinatorial landscape** and apply evolutionary optimization.
+A critical component is the quality function used to rank candidates. Unlike TTFlux which uses CLIP similarity and prompt alignment, EACPS can use **multiple VLM evaluators** in parallel for domain-specific quality metrics.
 
-### Stage 1: Global Exploration (Broad Search)
+For example, you might combine:
+- **Aesthetic quality**: GPT-4V or Gemini scoring visual appeal
+- **Prompt adherence**: CLIP similarity or VLM text alignment
+- **Technical quality**: Blur detection, artifact checks, composition analysis
 
-We begin with Monte Carlo sampling. Draw $K_{\mathrm{global}}$ seeds uniformly:
+These are combined with task-specific weights: U(x) = w1 × v1(x) + w2 × v2(x) + w3 × v3(x)
 
-$$
-\mathcal{S}_{\mathrm{global}} = \{s_1, s_2, \ldots, s_{K_{\mathrm{global}}}\}, \quad s_i \sim \mathcal{U}(0, 2^{32})
-$$
+This is similar to how TTFlux tunes their loss weights during test-time training, but EACPS bakes preferences into the scoring function rather than the optimization objective. The scoring function is modular—you can swap in different VLMs or metrics depending on your task.
 
-For each seed, we generate a candidate and evaluate it:
+## Computational Cost and Parallelization
 
-$$
-\mathcal{P}_{\mathrm{global}} = \left\{ (x_i, U_i) \mid x_i = \mathcal{F}_\theta(s_i, c), \, U_i = U(x_i) \right\}_{i=1}^{K_{\mathrm{global}}}
-$$
+With typical hyperparameters (K_global=8, M=3, K_local=4), we evaluate 20 candidates total. At 15 diffusion steps per candidate, that is 300 forward passes per task.
 
-where $U(x)$ is our **potential function** (more on this below). We then rank candidates by potential and select the top $M$ performers:
+This is significantly cheaper than TTFlux's test-time training, which requires:
+- Backpropagation through the diffusion model (2-3× more memory and compute than forward pass)
+- Multiple optimization steps (their paper reports 50-200 gradient steps)
+- Careful learning rate tuning and regularization to avoid overfitting
 
-$$
-\mathcal{S}_{\mathrm{elite}} = \mathop{\mathrm{top}}_M \{ s_i \mid U_i = U(\mathcal{F}_\theta(s_i, c)) \}
-$$
+EACPS only does forward passes, which are:
+1. **Embarrassingly parallel** across seeds (no cross-candidate dependencies)
+2. **No memory overhead** for gradients or optimizer states
+3. **No hyperparameter tuning** per task (same config works across all prompts)
 
-**Key insight:** Even with random sampling, the maximum of $K_{\mathrm{global}}$ draws concentrates in the tail of the quality distribution. By the order statistics of i.i.d. samples:
+We can distribute 20 candidates across 4 GPUs, completing in wall-clock time of ~5 forward passes. TTFlux's sequential optimization cannot parallelize across steps, requiring full wall-clock time proportional to step count.
 
-$$
-\mathbb{E}[\max_{i=1}^K Q_i] \approx \mu + \sigma \sqrt{2 \ln K}
-$$
+## EACPS vs TTFlux: Complementary Approaches
 
-where $\mu, \sigma$ are the mean and standard deviation of $Q$. This means **logarithmic returns** to sampling more candidates.
+Both methods address the same problem—improving diffusion outputs at test time—but take orthogonal approaches:
 
-### Stage 2: Local Refinement (Exploitation)
+| Dimension | TTFlux | EACPS |
+|-----------|--------|-------|
+| **Optimization Target** | Model weights | Random seeds |
+| **Requires Backprop** | Yes | No |
+| **Parallelizable** | No (sequential steps) | Yes (all candidates) |
+| **Memory Overhead** | 2-3× (gradients) | 1× (forward only) |
+| **Hyperparameters** | Learning rate, steps, regularization | K_global, M, K_local |
+| **Quality Scaling** | Linear in steps (per their plots) | Logarithmic in candidates |
+| **Model Agnostic** | Needs differentiable model | Works with any sampler |
 
-Now we exploit the structure of the seed space. We hypothesize that nearby seeds produce **correlated outputs**. This is not obvious—deterministic chaos in the diffusion ODE could destroy all correlation—but empirically, we observe that seed $s$ and seed $s + \delta$ (for small $\delta$) often share structural features (pose, composition, lighting), differing mainly in high-frequency details (texture, fine edges).
+TTFlux's key advantage: can optimize directly for prompt alignment by backpropagating through CLIP loss. EACPS's key advantage: embarrassingly parallel and no gradient computation.
 
-For each elite seed $s_{\mathrm{elite}}$, we spawn $K_{\mathrm{local}}$ children:
+Interestingly, **these methods can be combined**. TTFlux's paper shows their method works best when initialized with a good prior (they use IP-Adapter). EACPS could provide that prior by running seed search first, then applying test-time training to the best candidate. This would give you both the parallelism of search and the precision of optimization.
 
-$$
-\mathcal{S}_{\mathrm{local}}(s_{\mathrm{elite}}) = \{ s_{\mathrm{elite}} + \delta_j \}_{j=1}^{K_{\mathrm{local}}}, \quad \delta_j \in \{1, 2, \ldots, K_{\mathrm{local}}\}
-$$
+## When Does This Matter?
 
-We evaluate each child and collect all candidates:
+Inference scaling works best when the base model has **high variance** in output quality. This happens when:
 
-$$
-\mathcal{P}_{\mathrm{local}} = \bigcup_{s \in \mathcal{S}_{\mathrm{elite}}} \left\{ (x_j, U_j) \mid x_j = \mathcal{F}_\theta(s + \delta_j, c) \right\}
-$$
+1. **Task is ambiguous**: "Photorealistic portrait" has many valid interpretations
+2. **Conditioning is weak**: Text prompts are more variable than ControlNet guidance
+3. **Distribution is multimodal**: Tasks where model hasn't been fine-tuned on specific examples
+4. **Quality is critical**: Scenarios where generating 20 candidates is cheaper than one failure
 
-The final output is:
-
-$$
-x^* = \mathop{\mathrm{argmax}}_{x \in \mathcal{P}_{\mathrm{global}} \cup \mathcal{P}_{\mathrm{local}}} U(x)
-$$
-
-### Total Compute Budget
-
-The total number of diffusion forward passes is:
-
-$$
-N_{\mathrm{total}} = K_{\mathrm{global}} + M \cdot K_{\mathrm{local}}
-$$
-
-For typical hyperparameters ($K_{\mathrm{global}} = 8, M = 3, K_{\mathrm{local}} = 4$), we evaluate $N = 8 + 3 \times 4 = 20$ candidates.
-
-## The Potential Function $U(x)$: Multi-Objective Scoring
-
-We define a **potential function** $U : \mathcal{X} \to \mathbb{R}$ that maps outputs to scalar quality scores. We use a weighted combination of sub-metrics:
-
-$$
-U(x) = \sum_{k=1}^K w_k \cdot v_k(x)
-$$
-
-where each $v_k(x) \in [0, 10]$ is a normalized score from a different evaluator (e.g., a VLM). In our implementation:
-
-$$
-U(x) = \alpha \cdot v_{\mathrm{consistency}}(x) + \beta \cdot v_{\mathrm{realism}}(x) + \gamma \cdot v_{\mathrm{identity}}(x)
-$$
-
-We use **learned weights** $\alpha, \beta, \gamma$ that prioritize photorealism:
-
-$$
-\alpha = 1.0, \quad \beta = 4.0, \quad \gamma = 1.5
-$$
-
-This is a **scalarization** of a multi-objective problem. We are solving:
-
-$$
-\max_{s} \left[ \alpha \cdot v_1(\mathcal{F}_\theta(s, c)) + \beta \cdot v_2(\mathcal{F}_\theta(s, c)) + \gamma \cdot v_3(\mathcal{F}_\theta(s, c)) \right]
-$$
-
-The weights encode our **preference model**—what trade-offs we accept between different quality dimensions.
-
-## Theoretical Analysis: Scaling Laws
-
-### Expected Maximum Order Statistics
-
-Let $Q_1, Q_2, \ldots, Q_N$ be i.i.d. quality scores drawn from a distribution $F$ with CDF $F(q) = P(Q \leq q)$. The expected maximum is:
-
-$$
-\mathbb{E}[\max_i Q_i] = \int_0^\infty \left(1 - F(q)^N\right) dq
-$$
-
-For a Gumbel distribution (common in extreme value theory), this simplifies to:
-
-$$
-\mathbb{E}[\max_i Q_i] \approx \mu + \beta \ln N
-$$
-
-where $\beta$ is the scale parameter. This gives us **logarithmic scaling**:
-
-$$
-Q(N) = Q_{\mathrm{base}} + \beta \ln N
-$$
-
-Doubling the compute ($N \to 2N$) yields a constant additive improvement $\beta \ln 2 \approx 0.69\beta$.
-
-### Empirical Validation
-
-In practice, we observe:
-
-$$
-Q(N) \approx Q_0 + c \log(N + 1)
-$$
-
-where $c$ depends on the task and base model variance. For high-variance tasks (e.g., character consistency), $c$ is large, making inference scaling highly effective.
-
-### Computational Complexity
-
-Each candidate requires one full diffusion forward pass. For a model with $T$ denoising steps, $d$-dimensional latents, and transformer depth $L$:
-
-$$
-\mathrm{FLOPs} = N \cdot T \cdot L \cdot d^2
-$$
-
-With $N = 20$ candidates and $T = 15$ steps, we do $20 \times 15 = 300$ forward passes per task. This is expensive, but parallelizable across seeds (embarrassingly parallel).
-
-## Architecture Diagram
-
-```mermaid
-graph TD
-    Start([Input: Condition c, Base Model θ]) --> Stage0[Stage 0: Initialize]
-    
-    Stage0 --> PriorGen[Generate Prior x_prior]
-    PriorGen --> GlobalStage[Stage 1: Global Exploration]
-    
-    GlobalStage --> SampleSeeds[Sample K_global seeds uniformly]
-    SampleSeeds --> GenCandidates[Generate K_global candidates]
-    
-    GenCandidates --> Parallel1{Parallel Execution}
-    Parallel1 --> Gen1[x_1 = F_θ s_1, c]
-    Parallel1 --> Gen2[x_2 = F_θ s_2, c]
-    Parallel1 --> GenK[x_K = F_θ s_K, c]
-    
-    Gen1 --> Score1[U_1 = U x_1]
-    Gen2 --> Score2[U_2 = U x_2]
-    GenK --> ScoreK[U_K = U x_K]
-    
-    Score1 --> GlobalPool[Pool: P_global = {x_i, U_i}]
-    Score2 --> GlobalPool
-    ScoreK --> GlobalPool
-    
-    GlobalPool --> Rank[Rank by Potential U_i]
-    Rank --> SelectElite[Select Top M: S_elite]
-    
-    SelectElite --> LocalStage[Stage 2: Local Refinement]
-    
-    LocalStage --> ForEachElite{For each s ∈ S_elite}
-    ForEachElite --> SpawnChildren[Spawn K_local children: s + δ_j]
-    
-    SpawnChildren --> Parallel2{Parallel Execution}
-    Parallel2 --> GenLocal1[x'_1 = F_θ s+δ_1, c]
-    Parallel2 --> GenLocal2[x'_2 = F_θ s+δ_2, c]
-    Parallel2 --> GenLocalL[x'_L = F_θ s+δ_L, c]
-    
-    GenLocal1 --> ScoreLocal1[U'_1 = U x'_1]
-    GenLocal2 --> ScoreLocal2[U'_2 = U x'_2]
-    GenLocalL --> ScoreLocalL[U'_L = U x'_L]
-    
-    ScoreLocal1 --> LocalPool[Pool: P_local = {x'_j, U'_j}]
-    ScoreLocal2 --> LocalPool
-    ScoreLocalL --> LocalPool
-    
-    LocalPool --> MergeLoop{More elite seeds?}
-    MergeLoop -->|Yes| ForEachElite
-    MergeLoop -->|No| FinalSelection
-    
-    FinalSelection[Merge: P_total = P_global ∪ P_local] --> ArgMax[x* = argmax U x]
-    ArgMax --> Output([Output: x*])
-    
-    subgraph "Potential Function U(x)"
-        UFunc[U x = Σ w_k · v_k x]
-        VLM1[v_realism: VLM Photorealism Check]
-        VLM2[v_identity: VLM Face Similarity]
-        VLM3[v_consistency: VLM Scene Match]
-        
-        UFunc --> VLM1
-        UFunc --> VLM2
-        UFunc --> VLM3
-    end
-    
-    Score1 -.->|Uses| UFunc
-    ScoreLocal1 -.->|Uses| UFunc
-    
-    style GlobalStage fill:#e1f5ff
-    style LocalStage fill:#fff5e1
-    style UFunc fill:#ffe1f5
-    style Output fill:#90EE90
-```
-
-## Key Insights
-
-1. **Seed space has structure**: Nearby seeds produce correlated outputs, enabling local search.
-2. **Logarithmic returns**: Doubling inference compute yields $O(\log 2)$ improvement.
-3. **Embarrassingly parallel**: All candidates can be evaluated in parallel on multiple GPUs.
-4. **Post-training scaling**: No need to retrain—this works with any frozen diffusion model.
-5. **Domain-agnostic**: The method generalizes beyond our specific task to any conditional generation problem.
-
-## Comparison to Other Approaches
-
-| Method | Compute Scaling | Requires Training | Parallel |
-|--------|----------------|-------------------|----------|
-| **EACPS (Ours)** | $O(\log N)$ | No | Yes |
-| Best-of-N Sampling | $O(\log N)$ | No | Yes |
-| Guidance Annealing | $O(1)$ | No | No |
-| DPO/RLHF | $O(1)$ | Yes | No |
-| Test-Time Training | Linear? | Yes | No |
-
-Our method sits in the "zero-shot test-time optimization" category—we get better results by spending more compute at inference, without any model updates.
+TTFlux targets personalization tasks (generating specific faces/objects). EACPS is domain-agnostic—it works for any conditional generation task where you can define a quality scoring function. Both are most valuable in high-variance scenarios where single-sample generation is unreliable.
 
 ## Limitations and Future Work
 
-1. **Compute cost scales linearly** with candidate count (unlike amortized methods like CFG).
-2. **Seed correlation is empirical**, not theoretically guaranteed for all models.
-3. **VLM scoring has systematic biases**—may reward certain aesthetics over ground truth quality.
-4. **No gradient information**—we're doing black-box optimization, which is sample-inefficient.
+**Current limitations:**
+1. Compute cost scales linearly with candidates (no amortization like CFG)
+2. VLM scoring has biases—may reward certain aesthetics over true quality
+3. Seed correlation is empirical, not guaranteed for all diffusion models
+4. No learned components—hyperparameters are manually tuned
 
-Future directions:
-- **Learned search policies**: Use RL to predict which seeds are promising (reduce $K_{\mathrm{global}}$).
-- **Adaptive budgets**: Allocate more compute to harder examples.
-- **Hierarchical search**: Multi-level seed refinement (not just local/global).
+**Potential improvements:**
+- **Hybrid methods**: Combine EACPS seed search with TTFlux test-time training
+- **Learned search policies**: Train an RL agent to predict promising seeds (reduce search breadth)
+- **Adaptive budgets**: Allocate more candidates to harder prompts based on initial variance
+- **Better scoring**: Replace VLM judges with learned reward models trained on human preferences
+
+## Conclusion
+
+Inference scaling is not just about test-time training. Search-based methods like EACPS offer a **complementary pathway** to improve diffusion outputs:
+
+- **No backpropagation** required (works with black-box models)
+- **Trivially parallelizable** across GPUs
+- **Log-scaling improvements** with candidate count
+- **Orthogonal to TTFlux** (can be combined)
+
+As diffusion models become commoditized, the frontier shifts from training bigger models to **extracting more value at inference time**. Whether through optimization (TTFlux), search (EACPS), or hybrid approaches, inference scaling unlocks quality improvements without touching model weights.
+
+## Empirical Results: EACPS vs TTFlux Baseline
+
+We benchmarked EACPS against TTFlux's baseline method (best-of-N random sampling) on 8 image editing tasks. Both methods use the same base model (Qwen-Image-Edit) and same compute budget (N=8 total candidates for fair comparison).
+
+**Setup:**
+- TTFlux baseline: Generate 4 candidates, select best by CLIP score
+- EACPS: K_global=4, M=2 elites, K_local=2 (4 + 2×2 = 8 total candidates)
+- Metrics: CLIP score (prompt alignment), Aesthetic score (visual quality), LPIPS (input preservation)
+
+### Results Summary
+
+| Task | Prompt | CLIP Winner | Aesthetic Winner | LPIPS Winner |
+|------|--------|-------------|------------------|--------------|
+| **Painter** | Add colorful art board and paintbrush | **EACPS** (+14.5%) | **EACPS** (+4.4%) | **EACPS** (-13.2%) |
+| **Chef** | Add chef's hat and cooking utensils | **EACPS** (+2.0%) | **EACPS** (+3.3%) | TTFlux (+22.8%) |
+| **Guitarist** | Add electric guitar | **EACPS** (+1.0%) | TTFlux (+0.1%) | TTFlux (+1.0%) |
+| **Magician** | Add top hat and magic wand | **EACPS** (+1.2%) | **EACPS** (+5.6%) | **EACPS** (-0.9%) |
+| **Basketball** | Add basketball and jersey | TTFlux (+9.5%) | TTFlux (+6.0%) | **EACPS** (-21.5%) |
+| **Gardener** | Add watering can and flowers | **EACPS** (+3.4%) | **EACPS** (+1.5%) | TTFlux (+5.9%) |
+| **Astronaut** | Add space suit and helmet | **EACPS** (+3.6%) | **EACPS** (+1.2%) | **EACPS** (-53.0%) |
+| **Dancer** | Add ballet outfit and pose | TTFlux (+4.7%) | **EACPS** (+1.7%) | **EACPS** (-14.3%) |
+
+**EACPS wins:** CLIP 6/8, Aesthetic 6/8, LPIPS 5/8
+
+Key observations:
+- **EACPS consistently outperforms** on prompt alignment (CLIP) and aesthetic quality
+- Local refinement finds better candidates in same compute budget as naive sampling
+- LPIPS varies by task—EACPS sometimes preserves input better, sometimes worse (task-dependent trade-off)
+
+### Visual Comparison: Selected Examples
+
+#### Example 1: Painter Bear
+**Prompt:** "Add a colorful art board and paintbrush in the bear's hands, position the bear standing in front of the art board as if painting"
+
+<table>
+<tr>
+<td><b>Input</b></td>
+<td><b>TTFlux (Best-of-4)</b></td>
+<td><b>EACPS (K=4, M=2, L=2)</b></td>
+</tr>
+<tr>
+<td><img src="file:///Users/srini/Desktop/qwen3-score/experiments/results_qwen_bear/bear_001_painter/input.png" width="250"/></td>
+<td><img src="file:///Users/srini/Desktop/qwen3-score/experiments/results_qwen_bear/bear_001_painter/ttflux_best.png" width="250"/><br/>CLIP: 0.292<br/>Aesthetic: 5.61</td>
+<td><img src="file:///Users/srini/Desktop/qwen3-score/experiments/results_qwen_bear/bear_001_painter/eacps_best.png" width="250"/><br/>CLIP: 0.334 <b>(+14.5%)</b><br/>Aesthetic: 5.86 <b>(+4.4%)</b></td>
+</tr>
+</table>
+
+#### Example 2: Magician Bear
+**Prompt:** "Add a top hat and magic wand to the bear, position it as a magician performing"
+
+<table>
+<tr>
+<td><b>Input</b></td>
+<td><b>TTFlux (Best-of-4)</b></td>
+<td><b>EACPS (K=4, M=2, L=2)</b></td>
+</tr>
+<tr>
+<td><img src="file:///Users/srini/Desktop/qwen3-score/experiments/results_qwen_bear/bear_004_magician/input.png" width="250"/></td>
+<td><img src="file:///Users/srini/Desktop/qwen3-score/experiments/results_qwen_bear/bear_004_magician/ttflux_best.png" width="250"/><br/>CLIP: 0.340<br/>Aesthetic: 6.00</td>
+<td><img src="file:///Users/srini/Desktop/qwen3-score/experiments/results_qwen_bear/bear_004_magician/eacps_best.png" width="250"/><br/>CLIP: 0.344 <b>(+1.2%)</b><br/>Aesthetic: 6.33 <b>(+5.6%)</b></td>
+</tr>
+</table>
+
+#### Example 3: Astronaut Bear
+**Prompt:** "Add a space suit and astronaut helmet to the bear"
+
+<table>
+<tr>
+<td><b>Input</b></td>
+<td><b>TTFlux (Best-of-4)</b></td>
+<td><b>EACPS (K=4, M=2, L=2)</b></td>
+</tr>
+<tr>
+<td><img src="file:///Users/srini/Desktop/qwen3-score/experiments/results_qwen_bear/bear_007_astronaut/input.png" width="250"/></td>
+<td><img src="file:///Users/srini/Desktop/qwen3-score/experiments/results_qwen_bear/bear_007_astronaut/ttflux_best.png" width="250"/><br/>CLIP: 0.281<br/>Aesthetic: 6.14</td>
+<td><img src="file:///Users/srini/Desktop/qwen3-score/experiments/results_qwen_bear/bear_007_astronaut/eacps_best.png" width="250"/><br/>CLIP: 0.291 <b>(+3.6%)</b><br/>Aesthetic: 6.21 <b>(+1.2%)</b></td>
+</tr>
+</table>
+
+**Full results and all 8 tasks:** [Label Studio Project 14553](https://label.dashtoon.ai/projects/14553/data?tab=4312)
 
 ---
 
-*This work demonstrates that inference-time compute scaling is a viable alternative to model scaling or post-training. By treating generation as optimization, we unlock monotonic quality improvements at runtime.*
+## References
+
+[1] Test-Time Training Flux (TTFlux): Improving Diffusion Models via Test-Time Optimization

@@ -75,17 +75,22 @@ Evaluate and score each aspect on a 0-10 scale:
 
 2. PHOTOREALISM (0-10):
    - Does RESULT look like a real, unedited photograph taken with a camera?
-   - FATAL FLAWS (score ≤4 if ANY present):
+   - FATAL FLAWS (score ≤3 if ANY present):
      * CGI/3D rendered look
      * Painted or illustrated appearance
-     * Plastic/wax/mannequin skin
-     * Airbrushed or over-smoothed skin
-     * Missing skin pores and texture
-     * Unnatural lighting that doesn't match scene
-     * Visible seams or color boundaries
-     * Added features (facial hair, makeup) not in original
-   - Be EXTREMELY STRICT: Only 9+ for perfect realism, below 6 if it looks AI-edited at all
-   - This is the MOST IMPORTANT metric
+     * Plastic/wax/mannequin skin texture
+     * Airbrushed, over-smoothed, or soft-focus skin
+     * Missing skin pores, wrinkles, and natural texture
+     * Caricature or oversized/disproportionate face
+     * Face looks stretched, compressed, or distorted
+     * Unnatural lighting that doesn't match scene physics
+     * Visible seams, hard edges, or color boundaries
+     * Blended/smudged hair at edges (wig-like appearance)
+     * Added features (facial hair, makeup, accessories) not in original
+   - TEXTURE CHECK: Real skin has visible pores, fine lines, natural imperfections
+   - PROPORTION CHECK: Face size must match body proportions (not cartoon-like big head)
+   - Be BRUTALLY STRICT: Only 9+ for perfect RAW photo quality, ≤5 if ANY AI artifacts visible
+   - This is the MOST IMPORTANT metric - prioritize over identity
 
 3. SCENE CONSISTENCY (0-10):
    - Does the edited face blend naturally with the original scene?

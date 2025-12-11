@@ -25,18 +25,20 @@ class ModelConfig:
     """Model configuration."""
     # Qwen Edit
     qwen_model_id: str = "Qwen/Qwen-Image-Edit"
-    num_inference_steps: int = 15  # MUCH lower - minimal editing
-    guidance_scale: float = 2.5  # Very low - barely touch the face swap
+    num_inference_steps: int = 12  # Minimal steps to preserve texture
+    guidance_scale: float = 2.0  # Very low CFG - minimal changes
     negative_prompt: str = (
-        "blurry, low quality, distorted, artifacts, double face, triple face, "
-        "unnatural, fake, AI generated, deepfake artifacts, "
-        "cartoon, painting, illustration, anime, 3d render, cgi, "
-        "oversaturated, airbrushed, plastic skin, smooth skin, unrealistic skin, "
-        "visible seams, color mismatch, lighting mismatch, "
-        "caricature, exaggerated features, doll-like, mannequin, "
-        "overprocessed, oversharpened, hdr artifacts, "
-        "added facial hair, mustache, beard, stubble, extra hair, "
-        "watermark, text, logo, signature"
+        "soft skin, smooth skin, airbrushed skin, blurred skin, porcelain skin, plastic skin, "
+        "soft focus, gaussian blur, beauty filter, skin smoothing, touched up photo, "
+        "oversaturated, overexposed, high contrast, boosted colors, vivid colors, "
+        "caricature, cartoon, big head, oversized face, disproportionate face, "
+        "exaggerated features, stretched face, compressed face, distorted proportions, "
+        "fake hair, wig-like hair, painted hair, synthetic hair texture, "
+        "visible seams, hard edges, color banding, posterization, "
+        "deepfake artifacts, face morph, blending artifacts, "
+        "added facial hair, mustache, beard, stubble that wasn't there, "
+        "illustration, painting, 3d render, cgi, anime, manga, "
+        "watermark, text, logo, signature, frame"
     )
     
     # Gemini
