@@ -121,11 +121,11 @@ if "$ZELLIJ_BIN" list-sessions 2>/dev/null | grep -q "^${SESSION_NAME}$"; then
     if [ "$choice" = "2" ]; then
         "$ZELLIJ_BIN" kill-session "${SESSION_NAME}"
         echo "Creating new session..."
-        "$ZELLIJ_BIN" attach --create "${SESSION_NAME}" -- "${SHELL}" -c "eval '$CMD'"
+        "$ZELLIJ_BIN" attach --create "${SESSION_NAME}" --command "$CMD"
     else
         "$ZELLIJ_BIN" attach "${SESSION_NAME}"
     fi
 else
     echo "Creating new session ${SESSION_NAME}..."
-    "$ZELLIJ_BIN" attach --create "${SESSION_NAME}" -- "${SHELL}" -c "eval '$CMD'"
+    "$ZELLIJ_BIN" attach --create "${SESSION_NAME}" --command "$CMD"
 fi
