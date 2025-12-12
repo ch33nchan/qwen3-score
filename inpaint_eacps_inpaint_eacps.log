@@ -1,0 +1,6 @@
+usage: run.py [-h] --task_id TASK_ID [TASK_ID ...] [--from_file FROM_FILE]
+              [--gemini_api_key GEMINI_API_KEY] [--output_dir OUTPUT_DIR]
+              [--cache_dir CACHE_DIR] [--device DEVICE] [--k_global K_GLOBAL]
+              [--m_global M_GLOBAL] [--k_local K_LOCAL] [--use_moondream]
+              [--no_moondream]
+run.py: error: unrecognized arguments:  
