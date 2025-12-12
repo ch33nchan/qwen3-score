@@ -453,6 +453,7 @@ def run_eacps_inpaint(
     verbose: bool = True,
     dual_output: bool = True,
     preserve_init_hair: bool = False,
+    override_prompt: Optional[str] = None,
 ) -> Tuple[Image.Image, List[Candidate], Optional[Image.Image]]:
     """
     Run EACPS inference scaling for inpainting.
@@ -466,7 +467,11 @@ def run_eacps_inpaint(
     eacps = config.eacps
     model = config.model
     
-    prompt = create_inpaint_prompt(character_name, preserve_init_hair=preserve_init_hair)
+    # Allow caller to provide a full custom inpaint prompt.
+    if override_prompt:
+        prompt = override_prompt
+    else:
+        prompt = create_inpaint_prompt(character_name, preserve_init_hair=preserve_init_hair)
     
     # Stage 0: Face swap using InsightFace (preserves exact identity)
     if verbose:
@@ -631,6 +636,11 @@ def process_task(
         )
     
     # Run EACPS
+    # Allow caller to pass an override_prompt via config.model.override_prompt (optional)
+    override_prompt = None
+    if hasattr(config.model, 'override_prompt') and config.model.override_prompt:
+        override_prompt = config.model.override_prompt
+
     best_result, all_candidates = run_eacps_inpaint(
         init_image=init_image,
         mask_image=mask_image,
@@ -640,6 +650,7 @@ def process_task(
         scorer=scorer,
         config=config,
         verbose=True,
+        override_prompt=override_prompt,
     )
     
     # Prepare result
