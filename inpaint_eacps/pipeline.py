@@ -15,6 +15,13 @@ from PIL import Image, ImageFilter
 import numpy as np
 import cv2
 
+try:
+    from scipy.spatial import ConvexHull
+    HAS_SCIPY = True
+except ImportError:
+    HAS_SCIPY = False
+    logger.warning("scipy not available, using bbox-based masks")
+
 from config import EACPSConfig, ModelConfig, PipelineConfig
 from scorers import MultiModelScorer
 
@@ -62,7 +69,7 @@ def _setup_flash_attn_mock():
 _setup_flash_attn_mock()
 
 
-def _init_insightface():
+def _init_insightface(device: str = "cuda:0"):
     """Initialize InsightFace models."""
     global _FACE_ANALYZER, _FACE_SWAPPER
     
@@ -74,11 +81,21 @@ def _init_insightface():
         from insightface.app import FaceAnalysis
         
         logger.info("Loading InsightFace models...")
+        
+        # Determine device ID
+        if "cuda" in device:
+            try:
+                device_id = int(device.split(":")[1]) if ":" in device else 0
+            except:
+                device_id = 0
+        else:
+            device_id = -1  # CPU
+        
         _FACE_ANALYZER = FaceAnalysis(
             name='buffalo_l',
             providers=['CUDAExecutionProvider', 'CPUExecutionProvider']
         )
-        _FACE_ANALYZER.prepare(ctx_id=0, det_size=(640, 640))
+        _FACE_ANALYZER.prepare(ctx_id=device_id, det_size=(640, 640))
         
         model_path = os.path.expanduser("~/.insightface/models/inswapper_128.onnx")
         
@@ -113,11 +130,12 @@ def swap_face_insightface(
     init_image: Image.Image,
     character_image: Image.Image,
     mask_image: Optional[Image.Image] = None,
+    device: str = "cuda:0",
 ) -> Optional[Image.Image]:
     """
     Swap face using InsightFace - preserves exact identity from character.
     """
-    analyzer, swapper = _init_insightface()
+    analyzer, swapper = _init_insightface(device)
     
     if analyzer is None or swapper is None:
         logger.error("InsightFace not available")
@@ -339,30 +357,168 @@ def create_facial_feature_mask(
     face_bbox: np.ndarray,
     image_size: Tuple[int, int],
     include_hair: bool = False,
+    face_landmarks: Optional[np.ndarray] = None,
 ) -> Image.Image:
     """
     Create precise mask covering only facial features (eyes, nose, mouth, skin).
-    Excludes hair region if include_hair=False.
+    Uses face landmarks if available for SOTA precision.
     
     Args:
         face_bbox: [x1, y1, x2, y2] bounding box from face detection
         image_size: (width, height) of target image
         include_hair: If False, exclude top 30% of face bbox (hair region)
+        face_landmarks: Optional 68-point landmarks for precise mask
     """
     width, height = image_size
     mask = np.zeros((height, width), dtype=np.uint8)
     
     x1, y1, x2, y2 = face_bbox.astype(int)
     
-    if not include_hair:
-        # Exclude hair: only use lower 70% of face bbox
-        face_height = y2 - y1
-        y1 = y1 + int(face_height * 0.30)  # Start from 30% down
+    if face_landmarks is not None:
+        # Convert to numpy array if needed
+        landmarks = np.array(face_landmarks) if not isinstance(face_landmarks, np.ndarray) else face_landmarks
+        
+        # InsightFace uses 106 landmarks, we need at least 5 for a valid contour
+        if len(landmarks) >= 5:
+            try:
+                # Get face outline points (first few landmarks typically form jawline)
+                # For 106-point model: points 0-16 are jawline
+                # For 68-point model: points 0-16 are jawline
+                num_contour_points = min(17, len(landmarks))
+                face_contour = landmarks[:num_contour_points]
+                
+                # Ensure 2D coordinates
+                if face_contour.shape[1] > 2:
+                    face_contour = face_contour[:, :2]
+                
+                if not include_hair and len(landmarks) >= 27:
+                    # Use landmarks from eyebrows down (exclude top of head)
+                    # Find eyebrow landmarks (typically around indices 17-26)
+                    eyebrow_indices = list(range(17, min(27, len(landmarks))))
+                    if len(eyebrow_indices) > 0:
+                        eyebrow_y = landmarks[eyebrow_indices, 1].min()
+                        face_contour = face_contour[face_contour[:, 1] >= eyebrow_y]
+                
+                # Create mask from contour using convex hull
+                if HAS_SCIPY and len(face_contour) >= 3:
+                    try:
+                        hull = ConvexHull(face_contour)
+                        hull_points = face_contour[hull.vertices]
+                        cv2.fillPoly(mask, [hull_points.astype(np.int32)], 255)
+                    except:
+                        # Fallback: use bbox
+                        if not include_hair:
+                            face_height = y2 - y1
+                            y1 = y1 + int(face_height * 0.30)
+                        mask[y1:y2, x1:x2] = 255
+                else:
+                    # Fallback: use bbox
+                    if not include_hair:
+                        face_height = y2 - y1
+                        y1 = y1 + int(face_height * 0.30)
+                    mask[y1:y2, x1:x2] = 255
+            except Exception as e:
+                logger.warning(f"Landmark-based mask failed: {e}, using bbox")
+                if not include_hair:
+                    face_height = y2 - y1
+                    y1 = y1 + int(face_height * 0.30)
+                mask[y1:y2, x1:x2] = 255
+        else:
+            # Not enough landmarks, use bbox
+            if not include_hair:
+                face_height = y2 - y1
+                y1 = y1 + int(face_height * 0.30)
+            mask[y1:y2, x1:x2] = 255
+    else:
+        # Fallback to bbox-based mask
+        if not include_hair:
+            # Exclude hair: only use lower 70% of face bbox
+            face_height = y2 - y1
+            y1 = y1 + int(face_height * 0.30)  # Start from 30% down
+        
+        # Fill facial feature region (excluding hair if specified)
+        mask[y1:y2, x1:x2] = 255
     
-    # Fill facial feature region (excluding hair if specified)
-    mask[y1:y2, x1:x2] = 255
+    # Apply slight dilation for safety margin
+    kernel = np.ones((3, 3), np.uint8)
+    mask = cv2.dilate(mask, kernel, iterations=1)
     
     return Image.fromarray(mask)
+
+
+def refine_mask_with_face_detection(
+    init_image: Image.Image,
+    mask_image: Image.Image,
+    character_image: Image.Image,
+) -> Image.Image:
+    """
+    Refine mask using face detection for SOTA precision.
+    Combines provided mask with detected face region.
+    """
+    analyzer, _ = _init_insightface()
+    
+    if analyzer is None:
+        logger.warning("InsightFace not available, using original mask")
+        return mask_image
+    
+    # Detect face in init image
+    init_array = np.array(init_image.convert("RGB"))
+    init_bgr = cv2.cvtColor(init_array, cv2.COLOR_RGB2BGR)
+    faces = analyzer.get(init_bgr)
+    
+    if not faces:
+        logger.warning("No face detected, using original mask")
+        return mask_image
+    
+    # Get mask region
+    mask_array = np.array(mask_image.convert("L").resize(init_image.size, Image.Resampling.LANCZOS))
+    mask_center_y = np.where(mask_array > 128)[0].mean() if np.any(mask_array > 128) else init_image.height // 2
+    mask_center_x = np.where(mask_array > 128)[1].mean() if np.any(mask_array > 128) else init_image.width // 2
+    
+    # Find face closest to mask center
+    best_face = None
+    best_dist = float('inf')
+    
+    for face in faces:
+        bbox = face.bbox
+        face_center_x = (bbox[0] + bbox[2]) / 2
+        face_center_y = (bbox[1] + bbox[3]) / 2
+        
+        dist = np.sqrt((face_center_x - mask_center_x)**2 + (face_center_y - mask_center_y)**2)
+        if dist < best_dist:
+            best_dist = dist
+            best_face = face
+    
+    if best_face is None:
+        return mask_image
+    
+    # Create precise mask from face detection
+    face_bbox = best_face.bbox
+    
+    # Get landmarks (InsightFace uses different formats)
+    face_landmarks = None
+    if hasattr(best_face, 'landmark_2d_106'):
+        face_landmarks = best_face.landmark_2d_106
+    elif hasattr(best_face, 'kps'):  # Keypoints
+        face_landmarks = best_face.kps
+    elif hasattr(best_face, 'landmark'):
+        face_landmarks = best_face.landmark
+    
+    detected_mask = create_facial_feature_mask(
+        face_bbox,
+        init_image.size,
+        include_hair=False,
+        face_landmarks=face_landmarks,
+    )
+    
+    # Combine with original mask (union)
+    original_mask_array = np.array(mask_image.convert("L").resize(init_image.size, Image.Resampling.LANCZOS))
+    detected_mask_array = np.array(detected_mask)
+    
+    # Union: take maximum (either original or detected)
+    combined = np.maximum(original_mask_array, detected_mask_array)
+    
+    return Image.fromarray(combined.astype(np.uint8))
 
 
 def blend_with_mask(
@@ -477,7 +633,7 @@ def run_eacps_inpaint(
     if verbose:
         print(f"  Stage 0: InsightFace face swap")
     
-    swapped_base = swap_face_insightface(init_image, character_image, mask_image)
+    swapped_base = swap_face_insightface(init_image, character_image, mask_image, device=config.device)
     
     if swapped_base is None:
         logger.error("Face swap failed, falling back to compositing")
@@ -614,11 +770,20 @@ def process_task(
     use_moondream: bool = True,
     qwen_pipe: Optional['QwenEditPipeline'] = None,
     scorer: Optional[MultiModelScorer] = None,
+    refine_mask: bool = True,
 ) -> Dict[str, Any]:
     """
     Process a single inpainting task.
+    
+    Args:
+        refine_mask: If True, use face detection to refine mask for SOTA precision
     """
     logger.info(f"Processing task {task_id} ({character_name})")
+    
+    # Refine mask using face detection for SOTA precision
+    if refine_mask:
+        logger.info("Refining mask with face detection...")
+        mask_image = refine_mask_with_face_detection(init_image, mask_image, character_image)
     
     # Initialize pipeline
     if qwen_pipe is None:
@@ -680,7 +845,7 @@ def process_task(
         composited_ref.save(task_dir / "composited_reference.png")
         
         # Save face-swapped base
-        swapped = swap_face_insightface(init_image, character_image, mask_image)
+        swapped = swap_face_insightface(init_image, character_image, mask_image, device=config.device)
         if swapped:
             swapped.save(task_dir / "faceswap_base.png")
         

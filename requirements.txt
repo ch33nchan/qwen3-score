@@ -13,7 +13,6 @@ sentencepiece>=0.2.0
 opencv-python>=4.8.0
 google-generativeai>=0.3.0
 mediapipe>=0.10.0
-opencv-python>=4.8.0
 insightface>=0.7.3
 onnxruntime-gpu>=1.16.0
-tqdm
+scipy>=1.10.0

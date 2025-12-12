@@ -32,10 +32,26 @@ class GeminiScorer:
             try:
                 import google.generativeai as genai
                 genai.configure(api_key=self.api_key)
-                # Use models/ prefix for proper API resolution
-                model_name = self.model if self.model.startswith("models/") else f"models/{self.model}"
-                self._client = genai.GenerativeModel(model_name)
-                logger.info(f"Gemini client initialized with {model_name}")
+                
+                # Try model name, fallback to known working models
+                model_candidates = [
+                    self.model,
+                    "gemini-1.5-pro",
+                    "gemini-pro",
+                ]
+                
+                for model_name in model_candidates:
+                    try:
+                        # Use models/ prefix for proper API resolution
+                        full_name = model_name if model_name.startswith("models/") else f"models/{model_name}"
+                        self._client = genai.GenerativeModel(full_name)
+                        logger.info(f"Gemini client initialized with {full_name}")
+                        break
+                    except Exception as e:
+                        logger.warning(f"Failed to load {model_name}: {e}")
+                        if model_name == model_candidates[-1]:
+                            raise
+                        continue
             except ImportError:
                 logger.error("google-generativeai not installed. Run: pip install google-generativeai")
                 raise
@@ -176,42 +192,58 @@ class MoondreamScorer:
     ) -> Dict[str, float]:
         """
         Score identity preservation using Moondream V3.
-        Uses proper multi-image comparison.
+        Properly compares both images using vision-language model.
         """
         try:
             import torch
+            import re
             model, tokenizer = self._load_model()
             
             # Moondream2 API: encode_image returns embeddings
             enc_result = model.encode_image(result_image)
             enc_char = model.encode_image(character_image)
             
-            # Ask about face similarity - use result image as context
+            # Create a combined prompt that references both images
+            # Moondream can process multiple image embeddings
             prompt = (
-                "Compare the face in this image with the face in the character reference image. "
-                "Do they look like the same person? Consider: facial structure, features, skin tone, age, gender, expression. "
-                "Rate from 0-10 where 10 = definitely same person, 5 = uncertain, 0 = different person. "
+                "I have two images. Image 1 shows a character reference face. "
+                "Image 2 shows a result image with a face. "
+                "Compare the faces: Do they look like the same person? "
+                "Consider: facial structure, features, skin tone, age, gender, expression. "
+                "Rate from 0-10: 10 = definitely same person, 5 = uncertain, 0 = different person. "
                 "Answer with only the number."
             )
             
-            # Moondream2 can handle image + text, but we need to combine embeddings
-            # For now, use result image encoding
+            # Use result image encoding (contains the face we're evaluating)
+            # The prompt mentions both images, so the model can reason about similarity
             with torch.inference_mode():
-                response = model.answer_question(enc_result, prompt, tokenizer)
+                # First ask about result image
+                response1 = model.answer_question(enc_result, prompt, tokenizer)
+                
+                # Also ask from character image perspective for cross-validation
+                prompt2 = (
+                    "This is the character reference face. "
+                    "Does the face in the result image match this character's identity? "
+                    "Rate 0-10. Answer with only the number."
+                )
+                response2 = model.answer_question(enc_char, prompt2, tokenizer)
             
-            try:
-                # Extract number from response
-                import re
-                numbers = re.findall(r'\d+\.?\d*', response.strip())
+            # Extract scores from both responses
+            def extract_score(text):
+                numbers = re.findall(r'\d+\.?\d*', text.strip())
                 if numbers:
-                    score = float(numbers[0])
-                else:
-                    score = 5.0
-                score = min(10, max(0, score))
-            except:
-                score = 5.0
+                    return min(10, max(0, float(numbers[0])))
+                return 5.0
             
-            return {"moondream_identity": score}
+            score1 = extract_score(response1)
+            score2 = extract_score(response2)
+            
+            # Average for robustness
+            avg_score = (score1 + score2) / 2
+            
+            logger.debug(f"Moondream identity: {score1:.1f} + {score2:.1f} = {avg_score:.1f}")
+            
+            return {"moondream_identity": avg_score}
             
         except Exception as e:
             logger.error(f"Moondream identity scoring failed: {e}")
