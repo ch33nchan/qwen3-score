@@ -71,6 +71,16 @@ if [ ${#TASK_IDS[@]} -eq 0 ]; then
     exit 1
 fi
 
+# Use zellij from .venv/bin
+ZELLIJ_BIN="$PROJECT_ROOT/.venv/bin/zellij"
+if [ ! -f "$ZELLIJ_BIN" ]; then
+    echo -e "${YELLOW}Zellij not found in .venv/bin. Installing...${NC}"
+    "$SCRIPT_DIR/install_zellij.sh"
+fi
+
+# Add .venv/bin to PATH for zellij
+export PATH="$PROJECT_ROOT/.venv/bin:$PATH"
+
 # Build command
 CMD="cd '$PROJECT_ROOT' && source .venv/bin/activate && python3 inpaint_eacps/run.py"
 CMD="$CMD --from_file '$FROM_FILE'"
@@ -102,20 +112,20 @@ echo -e "${YELLOW}Device: ${DEVICE}${NC}"
 echo ""
 
 # Check if session exists
-if zellij list-sessions 2>/dev/null | grep -q "^${SESSION_NAME}$"; then
+if "$ZELLIJ_BIN" list-sessions 2>/dev/null | grep -q "^${SESSION_NAME}$"; then
     echo -e "${YELLOW}Session ${SESSION_NAME} already exists.${NC}"
     echo "Options:"
     echo "  1. Attach to existing session"
     echo "  2. Kill and recreate session"
     read -p "Choice [1/2]: " choice
     if [ "$choice" = "2" ]; then
-        zellij kill-session "${SESSION_NAME}"
+        "$ZELLIJ_BIN" kill-session "${SESSION_NAME}"
         echo "Creating new session..."
-        zellij attach --create "${SESSION_NAME}" -- "${SHELL}" -c "eval '$CMD'"
+        "$ZELLIJ_BIN" attach --create "${SESSION_NAME}" -- "${SHELL}" -c "eval '$CMD'"
     else
-        zellij attach "${SESSION_NAME}"
+        "$ZELLIJ_BIN" attach "${SESSION_NAME}"
     fi
 else
     echo "Creating new session ${SESSION_NAME}..."
-    zellij attach --create "${SESSION_NAME}" -- "${SHELL}" -c "eval '$CMD'"
+    "$ZELLIJ_BIN" attach --create "${SESSION_NAME}" -- "${SHELL}" -c "eval '$CMD'"
 fi
