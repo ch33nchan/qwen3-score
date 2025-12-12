@@ -108,51 +108,52 @@ echo -e "${YELLOW}Output directory: ${OUTPUT_DIR}${NC}"
 echo -e "${YELLOW}Device: ${DEVICE}${NC}"
 echo ""
 
-# Check if session exists
+# Since zellij doesn't support running commands directly when creating sessions,
+# we'll run the command and let user attach to zellij to monitor
+echo "Starting pipeline..."
+echo ""
+
+# Run the command in background and log output
+LOG_FILE="$PROJECT_ROOT/inpaint_eacps_${SESSION_NAME}.log"
+cd "$PROJECT_ROOT"
+
+# Start the command in background
+nohup "$CMD" > "$LOG_FILE" 2>&1 &
+CMD_PID=$!
+
+echo -e "${GREEN}Pipeline started (PID: $CMD_PID)${NC}"
+echo -e "${YELLOW}Log file: $LOG_FILE${NC}"
+echo ""
+
+# Check if zellij session exists, create/attach for monitoring
 if "$ZELLIJ_BIN" list-sessions 2>/dev/null | grep -q "^${SESSION_NAME}$"; then
-    echo -e "${YELLOW}Session ${SESSION_NAME} already exists.${NC}"
-    echo "Options:"
-    echo "  1. Attach to existing session"
-    echo "  2. Kill and recreate session"
-    read -p "Choice [1/2]: " choice
-    if [ "$choice" = "2" ]; then
-        "$ZELLIJ_BIN" kill-session "${SESSION_NAME}"
-        echo "Creating new session..."
-    else
-        echo "Attaching to existing session..."
+    echo "Zellij session '${SESSION_NAME}' exists."
+    echo "Attach to monitor: .venv/bin/zellij attach ${SESSION_NAME}"
+    echo ""
+    read -p "Attach now? [y/N]: " attach_now
+    if [ "$attach_now" = "y" ] || [ "$attach_now" = "Y" ]; then
+        # Create a simple monitoring pane in zellij
         "$ZELLIJ_BIN" attach "${SESSION_NAME}"
-        exit 0
+    fi
+else
+    echo "Creating zellij session for monitoring..."
+    echo "You can attach with: .venv/bin/zellij attach ${SESSION_NAME}"
+    echo ""
+    echo "To monitor progress:"
+    echo "  tail -f $LOG_FILE"
+    echo "  OR"
+    echo "  .venv/bin/zellij attach ${SESSION_NAME}"
+    echo ""
+    read -p "Create and attach to zellij session now? [y/N]: " create_now
+    if [ "$create_now" = "y" ] || [ "$create_now" = "Y" ]; then
+        # Start zellij in a way that shows the log
+        "$ZELLIJ_BIN" --session "${SESSION_NAME}" &
+        sleep 1
+        echo "Zellij session created. You can now attach to monitor progress."
     fi
 fi
 
-# Create session and run command
-echo "Creating new session ${SESSION_NAME}..."
-cd "$PROJECT_ROOT"
-
-# Start zellij in background, then execute command
-# We'll use a simple approach: start zellij and pipe the command to it
-"$ZELLIJ_BIN" --session "${SESSION_NAME}" &
-ZELLIJ_PID=$!
-
-# Wait a moment for session to start
-sleep 2
-
-# Send command to zellij session using action
-# Note: This is a workaround since zellij doesn't support direct command execution
-echo "Session created. Attaching..."
-echo "The command will run automatically when you attach."
 echo ""
-echo "To attach: .venv/bin/zellij attach ${SESSION_NAME}"
-echo ""
-echo "Or run the command manually:"
-echo "  $CMD"
-echo ""
-
-# Try to attach (non-blocking)
-"$ZELLIJ_BIN" attach "${SESSION_NAME}" 2>/dev/null || {
-    echo "Starting command in background..."
-    cd "$PROJECT_ROOT"
-    "$CMD" > "$PROJECT_ROOT/inpaint_eacps_${SESSION_NAME}.log" 2>&1 &
-    echo "Command running in background. Log: inpaint_eacps_${SESSION_NAME}.log"
-    echo "Attach to session: .venv/bin/zellij attach ${SESSION_NAME}"
-}
+echo "Pipeline is running. Check progress with:"
+echo "  tail -f $LOG_FILE"
+echo "  OR attach to zellij: .venv/bin/zellij attach ${SESSION_NAME}"
