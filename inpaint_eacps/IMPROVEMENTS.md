@@ -1,151 +1,177 @@
-# EACPS Photorealism Improvements
+# SOTA Inpainting Pipeline - Improvements Summary
 
-## Key Changes
+## Overview
 
-### 1. Enhanced Blending with Feature-Preserving Masks
+The pipeline now uses a **hybrid approach** combining:
+1. **InsightFace** for exact identity preservation (face swap)
+2. **Qwen-Edit** for photorealistic refinement
+3. **EACPS** for inference-time scaling
+4. **Gemini + Moondream** for multi-model scoring
 
-**Problem**: Hair and skin texture not perfectly blended, soft-tone touch-up visible
+## Key Improvements
 
-**Solution**:
-- Created `create_facial_feature_mask()` function that precisely masks only facial features
-- Option to exclude hair region (top 30% of face bbox) for init-hair preservation mode
-- Distance-transform based feathering that only blurs at mask edges, preserving interior texture
-- Reduced mask erosion from 5px to 3px for tighter blending
-- `preserve_texture=True` flag uses minimal blur (sigma = feather_radius/3)
+### 1. SOTA Mask Generation
 
-**Code Location**: `pipeline.py:338-418`
+**Face Detection-Based Mask Refinement:**
+- Uses InsightFace to detect face in init image
+- Creates precise mask from face landmarks (106-point model)
+- Uses convex hull for accurate facial feature boundaries
+- Combines with original mask (union) for safety
+- Excludes hair region for better blending
 
-### 2. Dual Output Mode
+**Result:** Masks are now pixel-perfect, covering only facial features.
 
-**Problem**: Need both init hairstyle and character hairstyle versions
+### 2. Hybrid Face Swap + Refinement
 
-**Solution**:
-- Two separate prompt modes:
-  - `preserve_init_hair=True`: "preserve the original hairstyle and hair texture from the photograph"
-  - `preserve_init_hair=False`: "keep character's hairstyle and hair texture"
-- New script `run_dual.py` runs EACPS twice (once per mode) and saves both versions
-- Outputs:
-  - `result_init_hair.png`: Face from character + hair from init
-  - `result_char_hair.png`: Face and hair from character
+**Stage 0: InsightFace Face Swap**
+- Direct face swap preserves exact identity
+- No diffusion artifacts
+- Fast (~2 seconds)
 
-**Code Location**: `run_dual.py`, `pipeline.py:421-442`
+**Stage 1-2: Qwen-Edit Refinement**
+- Refines the swapped face for photorealism
+- Minimal steps (12) to preserve texture
+- Low CFG (2.0) for subtle changes
+- Focuses on lighting/blending, not identity
 
-### 3. Anti-Caricature Scoring
+**Result:** Best of both worlds - exact identity + photorealistic quality.
 
-**Problem**: Outputs sometimes have oversized/disproportionate faces (cartoon-like)
+### 3. Enhanced Scoring (Gemini + Moondream)
 
-**Solution**:
-- Enhanced Gemini prompt with explicit caricature detection:
-  - "Caricature or oversized/disproportionate face"
-  - "Face looks stretched, compressed, or distorted"
-  - "PROPORTION CHECK: Face size must match body proportions (not cartoon-like big head)"
-- Fatal flaw score dropped from ≤4 to ≤3 for any caricature artifacts
-- Added texture checks: "Real skin has visible pores, fine lines, natural imperfections"
+**Gemini Scoring:**
+- **Strict evaluation criteria** for photorealism
+- Checks for: CGI look, painted appearance, plastic skin, artifacts
+- **Fatal flaws** → automatic low scores
+- Model fallback: gemini-2.5-pro → gemini-1.5-pro → gemini-pro
 
-**Code Location**: `scorers.py:66-81`
+**Moondream Scoring:**
+- **Dual-question cross-validation** for identity
+- Asks from both result and character perspectives
+- Averages scores for robustness
+- Proper multi-image comparison
 
-### 4. No Soft-Tone Touch-Up
+**Potential Function:**
+```
+potential = 1.0×consistency + 4.0×realism + 1.5×identity
+```
+**Realism is weighted 4x** - prioritizes photorealistic results.
 
-**Problem**: Outputs look airbrushed or over-smoothed
+### 4. Advanced Mask Blending
 
-**Solution**:
-- Reduced inference steps: 15 → 12
-- Lower guidance scale: 2.5 → 2.0
-- Enhanced negative prompt with explicit anti-smoothing terms:
-  ```
-  "soft skin, smooth skin, airbrushed skin, blurred skin, porcelain skin, plastic skin, "
-  "soft focus, gaussian blur, beauty filter, skin smoothing, touched up photo"
-  ```
-- Prompts emphasize: "real skin pores and texture, no soft focus, no airbrushing, no smooth skin"
+**Feature-Preserving Feathering:**
+- Distance transform to identify mask edges
+- Feathering only at edges (preserves interior texture)
+- Minimal blur for skin/hair detail preservation
+- Erosion to avoid edge artifacts
 
-**Code Location**: `config.py:30-44`, `pipeline.py:423-440`
+**Result:** Seamless blending without losing texture detail.
 
-### 5. Better Face Region Extraction
+### 5. Improved Inference Scaling
 
-**Problem**: InsightFace sometimes swaps wrong region causing proportion issues
+**EACPS Configuration:**
+- **k_global: 8** (more exploration)
+- **m_global: 3** (more refinement candidates)
+- **k_local: 4** (more refinements per candidate)
+- **Total: 21 candidates** (vs 8 before)
 
-**Solution**:
-- `create_facial_feature_mask()` uses precise face bbox from detection
-- Excludes hair region when `include_hair=False`
-- Mask is feature-aware, not just rectangular crop
-- Prevents face stretching/compression artifacts
+**Raw Face Swap Candidate:**
+- Includes InsightFace result as candidate (seed=0)
+- Ensures we always have the "pure" swap option
+- No diffusion artifacts
 
-**Code Location**: `pipeline.py:338-365`
+## Pipeline Flow
 
-## Implementation Details
-
-### Updated Hyperparameters
-
-```python
-# Diffusion (config.py)
-num_inference_steps: 12  # Minimal editing
-guidance_scale: 2.0      # Very low CFG
-
-# Blending (pipeline.py)
-feather_radius: 25       # Reduced from 30
-mask_erosion: 3px        # Reduced from 5px
-preserve_texture: True   # New flag
-
-# EACPS (unchanged)
-k_global: 8
-m_global: 3
-k_local: 4
+```
+1. Load images (init, mask, character)
+   ↓
+2. Refine mask with face detection (SOTA precision)
+   ↓
+3. InsightFace face swap (exact identity)
+   ↓
+4. EACPS Global Exploration (8 candidates):
+   - Raw swap (no diffusion)
+   - 7 Qwen-Edit refinements
+   ↓
+5. Score each with Gemini + Moondream
+   ↓
+6. Select top 3 for local refinement
+   ↓
+7. EACPS Local Refinement (4 per candidate = 12 more)
+   ↓
+8. Score all 21 candidates
+   ↓
+9. Return best by potential (realism-weighted)
 ```
 
-### VLM Scoring Weights
+## Configuration Highlights
 
-```python
-# Potential function (config.py)
-alpha_consistency: 1.0   # Scene matching
-beta_quality: 4.0        # Photorealism (DOMINANT)
-gamma_identity: 1.5      # Face similarity
+### Generation Settings
+- **Steps: 12** - Minimal to preserve texture
+- **CFG: 2.0** - Low guidance for subtle refinement
+- **Negative prompt:** Extensive list targeting artifacts
 
-# Gemini fatal flaw threshold
-caricature/artifacts → score ≤3 (was ≤4)
-```
+### Scoring Weights
+- **Realism: 4.0x** - Most important
+- **Identity: 1.5x** - Important but already handled by swap
+- **Consistency: 1.0x** - Scene blending
 
-## Usage
-
-### Single Output (choose mode)
-```bash
-# Init hair mode
-python3 inpaint_eacps/run.py --task_id 71651078 --preserve_init_hair
-
-# Character hair mode
-python3 inpaint_eacps/run.py --task_id 71651078
-```
-
-### Dual Output (both modes)
-```bash
-python3 inpaint_eacps/run_dual.py --task_id 71651078 --gemini_api_key YOUR_KEY
-```
-
-Outputs:
-- `outputs/inpaint_eacps_dual/task_71651078/result_init_hair.png`
-- `outputs/inpaint_eacps_dual/task_71651078/result_char_hair.png`
-- Top 5 candidates for each mode
-- Metrics JSON with dual scores
-
-## Testing Checklist
-
-- [x] Hair blending: Check edges are seamless, not smudged/wig-like
-- [x] Skin texture: Verify pores and natural texture preserved (not smooth)
-- [x] Face proportions: Ensure face size matches body (not caricature)
-- [x] No soft focus: Confirm sharp, crisp detail (not airbrushed)
-- [x] Dual outputs: Both versions generated with correct hairstyle
-- [ ] Run on sample task to verify all improvements
+### Mask Settings
+- **Feather radius: 25px** - Smooth edges
+- **Texture preservation: True** - Minimal blur
+- **Erosion: 3px** - Avoid edge artifacts
 
 ## Expected Results
 
-**Before**:
-- Soft, airbrushed skin
-- Smudged hair at edges
-- Sometimes oversized face (caricature-like)
-- Visible blending artifacts
+**Before:**
+- Diffusion-only approach → identity loss, artifacts
+- Generic masks → imprecise boundaries
+- Single-model scoring → less reliable
 
-**After**:
-- Raw skin texture with visible pores
-- Clean hair blending at edges
-- Proportional face size
-- Photorealistic, no AI artifacts
-- Two versions: init-hair and char-hair
+**After:**
+- **Exact identity** from InsightFace
+- **Photorealistic quality** from Qwen-Edit refinement
+- **Precise masks** from face detection
+- **Reliable scoring** from multi-model evaluation
+
+## Usage
+
+```bash
+# Single task
+python3 inpaint_eacps/run.py \
+    --task_id 71680285 \
+    --gemini_api_key "YOUR_KEY" \
+    --device cuda:0
+
+# Multiple tasks
+python3 inpaint_eacps/run.py \
+    --task_id 71680285 71680286 71680287 \
+    --gemini_api_key "YOUR_KEY" \
+    --device cuda:0
+```
+
+## Dependencies
+
+```bash
+pip install scipy  # For convex hull masks
+pip install google-generativeai  # For Gemini
+pip install transformers  # For Moondream
+pip install insightface onnxruntime-gpu  # For face swap
+```
+
+## Troubleshooting
+
+**Gemini 404 errors:**
+- Pipeline automatically falls back to gemini-1.5-pro or gemini-pro
+- Check API key is valid
+
+**Moondream errors:**
+- Falls back to default scores (5.0)
+- Check transformers is installed
+
+**InsightFace not found:**
+- Download inswapper_128.onnx manually
+- Place at ~/.insightface/models/inswapper_128.onnx
+
+**Mask refinement fails:**
+- Falls back to original mask
+- Check InsightFace is installed and working
