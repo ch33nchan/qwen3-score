@@ -575,27 +575,46 @@ def blend_with_mask(
 
 
 def create_inpaint_prompt(character_name: str, preserve_init_hair: bool = False) -> str:
-    """Create prompt for post-faceswap refinement."""
+    """
+    Create structured prompt for realistic face blending with EACPS.
+    Uses chain-of-thought reasoning for better results.
+    """
     if preserve_init_hair:
         # Mode 1: Preserve init image hairstyle
-        return (
-            f"seamlessly blend the face into the photograph, "
-            f"match skin tone and lighting exactly to the scene, "
-            f"preserve the original hairstyle and hair texture from the photograph, "
-            f"keep exact hair color and style from background, "
-            f"natural photorealistic face with real skin pores and texture, "
-            f"no soft focus, no airbrushing, no smooth skin"
-        )
+        return f"""Objective: Realistically blend the facial identity from [Source Image - {character_name}] onto the body and pose of [Base Image].
+
+Input Analysis:
+- Base Image Analysis: Identify the exact head pose (front-facing), camera angle, focal length, and lighting direction of the Base Image. Note the skin texture and shadows on the neck/hair.
+- Character Analysis: Extract the key facial landmarks (eyes, nose, mouth shape) from the Character Image.
+
+Reasoning & Planning (Inference Steps):
+
+Step 1 (Geometry): Map the Character's facial features onto the Base Image's head geometry. CRITICAL: Do not alter the rotation, tilt, or position of the head from the Base Image. The pose must remain locked.
+
+Step 2 (Lighting Match): Adjust the Character's skin tone and shading to match the Base Image's lighting environment exactly. If the Base Image has soft studio light, the face must reflect that.
+
+Step 3 (Blending): Plan the mask edge. Keep the original hair, ears, neck, and clothing of the Base Image. Only replace the facial region (T-zone, cheeks, jaw). Preserve the original hairstyle and hair texture from the Base Image.
+
+Execution: Generate a photorealistic result based on the plan above. The final image must be indistinguishable from a real photo, retaining the exact composition and pose of the Base Image. Natural skin pores, realistic texture, no soft focus, no airbrushing."""
     else:
         # Mode 2: Use character hairstyle
-        return (
-            f"seamlessly blend the face and hair into the photograph, "
-            f"match lighting and colors to the scene, "
-            f"keep character's hairstyle and hair texture, "
-            f"natural photorealistic face with real skin pores and texture, "
-            f"no soft focus, no airbrushing, no smooth skin, "
-            f"preserve facial features exactly"
-        )
+        return f"""Objective: Realistically blend the facial identity from [Source Image - {character_name}] onto the body and pose of [Base Image].
+
+Input Analysis:
+
+Base Image Analysis: Identify the exact head pose (front-facing), camera angle, focal length, and lighting direction of the Base Image. Note the skin texture and shadows on the neck/hair.
+
+Character Analysis: Extract the key facial landmarks (eyes, nose, mouth shape) from the Character Image.
+
+Reasoning & Planning (Inference Steps):
+
+Step 1 (Geometry): Map the Character's facial features onto the Base Image's head geometry. CRITICAL: Do not alter the rotation, tilt, or position of the head from the Base Image. The pose must remain locked.
+
+Step 2 (Lighting Match): Adjust the Character's skin tone and shading to match the Base Image's lighting environment exactly. If the Base Image has soft studio light, the face must reflect that.
+
+Step 3 (Blending): Plan the mask edge. Keep the original ears, neck, and clothing of the Base Image. Replace the facial region (T-zone, cheeks, jaw) AND hair with the Character's hairstyle. Blend the hair naturally into the scene.
+
+Execution: Generate a photorealistic result based on the plan above. The final image must be indistinguishable from a real photo, retaining the exact composition and pose of the Base Image."""
 
 
 def run_eacps_inpaint(
