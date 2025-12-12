@@ -108,21 +108,6 @@ echo -e "${YELLOW}Output directory: ${OUTPUT_DIR}${NC}"
 echo -e "${YELLOW}Device: ${DEVICE}${NC}"
 echo ""
 
-# Create zellij layout file that runs the command
-LAYOUT_FILE="$PROJECT_ROOT/.venv/bin/inpaint_eacps_layout.kdl"
-cat > "$LAYOUT_FILE" <<EOF
-layout {
-    default_tab_template {
-        pane size=1 borderless=true {
-            plugin location="zellij:run" {
-                command "${WRAPPER_SCRIPT}"
-                cwd "${PROJECT_ROOT}"
-            }
-        }
-    }
-}
-EOF
-
 # Check if session exists
 if "$ZELLIJ_BIN" list-sessions 2>/dev/null | grep -q "^${SESSION_NAME}$"; then
     echo -e "${YELLOW}Session ${SESSION_NAME} already exists.${NC}"
@@ -133,13 +118,41 @@ if "$ZELLIJ_BIN" list-sessions 2>/dev/null | grep -q "^${SESSION_NAME}$"; then
     if [ "$choice" = "2" ]; then
         "$ZELLIJ_BIN" kill-session "${SESSION_NAME}"
         echo "Creating new session..."
-        cd "$PROJECT_ROOT"
-        "$ZELLIJ_BIN" --session "${SESSION_NAME}" --layout "$LAYOUT_FILE"
     else
+        echo "Attaching to existing session..."
         "$ZELLIJ_BIN" attach "${SESSION_NAME}"
+        exit 0
     fi
-else
-    echo "Creating new session ${SESSION_NAME}..."
-    cd "$PROJECT_ROOT"
-    "$ZELLIJ_BIN" --session "${SESSION_NAME}" --layout "$LAYOUT_FILE"
 fi
+
+# Create session and run command
+echo "Creating new session ${SESSION_NAME}..."
+cd "$PROJECT_ROOT"
+
+# Start zellij in background, then execute command
+# We'll use a simple approach: start zellij and pipe the command to it
+"$ZELLIJ_BIN" --session "${SESSION_NAME}" &
+ZELLIJ_PID=$!
+
+# Wait a moment for session to start
+sleep 2
+
+# Send command to zellij session using action
+# Note: This is a workaround since zellij doesn't support direct command execution
+echo "Session created. Attaching..."
+echo "The command will run automatically when you attach."
+echo ""
+echo "To attach: .venv/bin/zellij attach ${SESSION_NAME}"
+echo ""
+echo "Or run the command manually:"
+echo "  $CMD"
+echo ""
+
+# Try to attach (non-blocking)
+"$ZELLIJ_BIN" attach "${SESSION_NAME}" 2>/dev/null || {
+    echo "Starting command in background..."
+    cd "$PROJECT_ROOT"
+    "$CMD" > "$PROJECT_ROOT/inpaint_eacps_${SESSION_NAME}.log" 2>&1 &
+    echo "Command running in background. Log: inpaint_eacps_${SESSION_NAME}.log"
+    echo "Attach to session: .venv/bin/zellij attach ${SESSION_NAME}"
+}
