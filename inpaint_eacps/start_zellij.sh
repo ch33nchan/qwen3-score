@@ -81,29 +81,26 @@ fi
 # Add .venv/bin to PATH for zellij
 export PATH="$PROJECT_ROOT/.venv/bin:$PATH"
 
-# Build command
-CMD="cd '$PROJECT_ROOT' && source .venv/bin/activate && python3 inpaint_eacps/run.py"
-CMD="$CMD --from_file '$FROM_FILE'"
-CMD="$CMD --output_dir '$OUTPUT_DIR'"
-CMD="$CMD --device '$DEVICE'"
+# Create a wrapper script for the command
+WRAPPER_SCRIPT="$PROJECT_ROOT/.venv/bin/run_inpaint_eacps.sh"
+cat > "$WRAPPER_SCRIPT" <<EOF
+#!/bin/bash
+cd '$PROJECT_ROOT'
+source .venv/bin/activate
+python3 inpaint_eacps/run.py \\
+  --from_file '$FROM_FILE' \\
+  --output_dir '$OUTPUT_DIR' \\
+  --device '$DEVICE' \\
+  $( [ -n "$GEMINI_KEY" ] && echo "--gemini_api_key '$GEMINI_KEY' \\" ) \\
+  $( [ -n "$K_GLOBAL" ] && echo "--k_global $K_GLOBAL \\" ) \\
+  $( [ -n "$M_GLOBAL" ] && echo "--m_global $M_GLOBAL \\" ) \\
+  $( [ -n "$K_LOCAL" ] && echo "--k_local $K_LOCAL \\" ) \\
+  --task_id ${TASK_IDS[@]}
+EOF
+chmod +x "$WRAPPER_SCRIPT"
 
-if [ -n "$GEMINI_KEY" ]; then
-    CMD="$CMD --gemini_api_key '$GEMINI_KEY'"
-fi
-
-if [ -n "$K_GLOBAL" ]; then
-    CMD="$CMD --k_global $K_GLOBAL"
-fi
-
-if [ -n "$M_GLOBAL" ]; then
-    CMD="$CMD --m_global $M_GLOBAL"
-fi
-
-if [ -n "$K_LOCAL" ]; then
-    CMD="$CMD --k_local $K_LOCAL"
-fi
-
-CMD="$CMD --task_id ${TASK_IDS[@]}"
+# Use the wrapper script
+CMD="$WRAPPER_SCRIPT"
 
 echo -e "${GREEN}Starting zellij session: ${SESSION_NAME}${NC}"
 echo -e "${YELLOW}Task IDs: ${TASK_IDS[*]}${NC}"
