@@ -685,11 +685,19 @@ def run_eacps_inpaint(
     if verbose:
         print(f"    Raw face swap: Potential={potential_raw:.2f}")
     
+    global_pbar = tqdm(
+        total=eacps.k_global,
+        desc="  Global exploration",
+        unit="candidate",
+        leave=False,
+        position=1,
+        bar_format='    {desc}: {n_fmt}/{total_fmt} [{elapsed}<{remaining}] {postfix}'
+    )
+    
     for i in range(eacps.k_global):
         seed = i * 31 + 5000
         
-        if verbose:
-            print(f"    Generating candidate {i+1}/{eacps.k_global} (seed={seed})...")
+        global_pbar.set_postfix({'seed': seed})
         
         # Generate from face-swapped image (exact identity preserved)
         raw_result = qwen_pipe.generate(
@@ -716,9 +724,13 @@ def run_eacps_inpaint(
             potential=potential,
         ))
         
-        if verbose:
-            print(f"      Scores: {scores}")
-            print(f"      Potential: {potential:.2f}")
+        global_pbar.set_postfix({
+            'seed': seed,
+            'potential': f"{potential:.2f}"
+        })
+        global_pbar.update(1)
+    
+    global_pbar.close()
     
     # Rank by potential
     global_candidates.sort(key=lambda c: c.potential, reverse=True)
@@ -733,12 +745,24 @@ def run_eacps_inpaint(
     
     local_candidates: List[Candidate] = []
     
+    total_local = eacps.m_global * eacps.k_local
+    local_pbar = tqdm(
+        total=total_local,
+        desc="  Local refinement",
+        unit="candidate",
+        leave=False,
+        position=1,
+        bar_format='    {desc}: {n_fmt}/{total_fmt} [{elapsed}<{remaining}] {postfix}'
+    )
+    
     for j, parent in enumerate(top_candidates):
         for k in range(eacps.k_local):
             child_seed = parent.seed * 10 + k + 1
             
-            if verbose:
-                print(f"    Refining {j+1}.{k+1} (seed={child_seed})...")
+            local_pbar.set_postfix({
+                'parent': f"{j+1}.{k+1}",
+                'seed': child_seed
+            })
             
             # Use face-swapped base for refinement
             raw_result = qwen_pipe.generate(
@@ -764,8 +788,13 @@ def run_eacps_inpaint(
                 parent_seed=parent.seed,
             ))
             
-            if verbose:
-                print(f"      Potential: {potential:.2f}")
+            local_pbar.set_postfix({
+                'parent': f"{j+1}.{k+1}",
+                'potential': f"{potential:.2f}"
+            })
+            local_pbar.update(1)
+    
+    local_pbar.close()
     
     # Final selection
     all_candidates = global_candidates + local_candidates

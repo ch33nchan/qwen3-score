@@ -16,6 +16,7 @@ from datetime import datetime
 import requests
 from io import BytesIO
 from PIL import Image
+from tqdm import tqdm
 
 logging.basicConfig(
     level=logging.INFO,
@@ -76,7 +77,8 @@ def parse_args():
                         help="Gemini API key")
     
     # Output
-    parser.add_argument("--output_dir", type=str, default="outputs/inpaint_eacps")
+    parser.add_argument("--output_dir", type=str, default="inpaint_eacps", 
+                        help="Output directory (default: inpaint_eacps)")
     parser.add_argument("--cache_dir", type=str, default="data/cache")
     
     # Device
@@ -143,8 +145,21 @@ def main():
 
     # Ensure args.task_id is a list
     task_ids = args.task_id if isinstance(args.task_id, list) else [args.task_id]
+    total_tasks = len(task_ids)
     
-    for task_id in task_ids:
+    logger.info(f"Processing {total_tasks} task(s): {', '.join(task_ids)}")
+    
+    # Main progress bar for all tasks
+    main_pbar = tqdm(
+        total=total_tasks,
+        desc="Overall Progress",
+        unit="task",
+        position=0,
+        leave=True,
+        bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt} tasks [{elapsed}<{remaining}]'
+    )
+    
+    for idx, task_id in enumerate(task_ids, 1):
         try:
             # Load task
             logger.info(f"Loading task {task_id} from {args.from_file}")
@@ -199,6 +214,14 @@ def main():
             logger.info(f"Elapsed: {elapsed}")
             logger.info(f"Output: {result.get('output_dir', output_dir)}")
             
+            # Update main progress bar
+            main_pbar.update(1)
+            main_pbar.set_postfix({
+                'current': task_id,
+                'character': result['character_name'][:15],
+                'potential': f"{result['best_potential']:.2f}"
+            })
+            
             # Auto-push to git
             try:
                 import subprocess
@@ -228,7 +251,12 @@ def main():
             logger.error(f"Error processing task {task_id}: {e}")
             import traceback
             traceback.print_exc()
+            main_pbar.update(1)
+            main_pbar.set_postfix({'error': task_id})
             continue
+    
+    main_pbar.close()
+    logger.info(f"Completed processing {total_tasks} task(s)")
 
 
 if __name__ == "__main__":
