@@ -14,6 +14,7 @@ import torch
 from PIL import Image, ImageFilter
 import numpy as np
 import cv2
+from tqdm import tqdm
 
 try:
     from scipy.spatial import ConvexHull
