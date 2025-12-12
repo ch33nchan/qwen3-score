@@ -108,6 +108,21 @@ echo -e "${YELLOW}Output directory: ${OUTPUT_DIR}${NC}"
 echo -e "${YELLOW}Device: ${DEVICE}${NC}"
 echo ""
 
+# Create zellij layout file that runs the command
+LAYOUT_FILE="$PROJECT_ROOT/.venv/bin/inpaint_eacps_layout.kdl"
+cat > "$LAYOUT_FILE" <<EOF
+layout {
+    default_tab_template {
+        pane size=1 borderless=true {
+            plugin location="zellij:run" {
+                command "${WRAPPER_SCRIPT}"
+                cwd "${PROJECT_ROOT}"
+            }
+        }
+    }
+}
+EOF
+
 # Check if session exists
 if "$ZELLIJ_BIN" list-sessions 2>/dev/null | grep -q "^${SESSION_NAME}$"; then
     echo -e "${YELLOW}Session ${SESSION_NAME} already exists.${NC}"
@@ -119,12 +134,12 @@ if "$ZELLIJ_BIN" list-sessions 2>/dev/null | grep -q "^${SESSION_NAME}$"; then
         "$ZELLIJ_BIN" kill-session "${SESSION_NAME}"
         echo "Creating new session..."
         cd "$PROJECT_ROOT"
-        "$ZELLIJ_BIN" run --session "${SESSION_NAME}" "$CMD"
+        "$ZELLIJ_BIN" --session "${SESSION_NAME}" --layout "$LAYOUT_FILE"
     else
         "$ZELLIJ_BIN" attach "${SESSION_NAME}"
     fi
 else
     echo "Creating new session ${SESSION_NAME}..."
     cd "$PROJECT_ROOT"
-    "$ZELLIJ_BIN" run --session "${SESSION_NAME}" "$CMD"
+    "$ZELLIJ_BIN" --session "${SESSION_NAME}" --layout "$LAYOUT_FILE"
 fi
