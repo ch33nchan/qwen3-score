@@ -25,8 +25,8 @@ class ModelConfig:
     """Model configuration."""
     # Qwen Edit
     qwen_model_id: str = "Qwen/Qwen-Image-Edit"
-    num_inference_steps: int = 12  # Minimal steps to preserve texture
-    guidance_scale: float = 2.0  # Very low CFG - minimal changes
+    num_inference_steps: int = 8  # Ultra-minimal steps to preserve original quality
+    guidance_scale: float = 1.2  # Extremely low CFG - only subtle refinement
     negative_prompt: str = (
         "soft skin, smooth skin, airbrushed skin, blurred skin, porcelain skin, plastic skin, "
         "soft focus, gaussian blur, beauty filter, skin smoothing, touched up photo, "
@@ -38,7 +38,13 @@ class ModelConfig:
         "deepfake artifacts, face morph, blending artifacts, "
         "added facial hair, mustache, beard, stubble that wasn't there, "
         "illustration, painting, 3d render, cgi, anime, manga, "
-        "watermark, text, logo, signature, frame"
+        "watermark, text, logo, signature, frame, "
+        "changed background, modified background, altered background, "
+        "changed body position, modified pose, altered pose, different angle, "
+        "changed clothing, modified clothing, altered clothing, "
+        "changed lighting, modified lighting, different lighting, "
+        "changed composition, modified composition, cropped image, "
+        "any changes outside the masked region, any modifications to unmasked areas"
     )
     
     # Gemini

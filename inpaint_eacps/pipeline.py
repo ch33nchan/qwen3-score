@@ -577,45 +577,72 @@ def blend_with_mask(
 
 def create_inpaint_prompt(character_name: str, preserve_init_hair: bool = False) -> str:
     """
-    Create structured prompt for realistic face blending with EACPS.
-    Uses chain-of-thought reasoning for better results.
+    Create strict prompt for photorealistic inpainting that preserves everything outside mask.
     """
     if preserve_init_hair:
         # Mode 1: Preserve init image hairstyle
-        return f"""Objective: Realistically blend the facial identity from [Source Image - {character_name}] onto the body and pose of [Base Image].
+        return f"""CRITICAL INSTRUCTIONS - READ CAREFULLY:
 
-Input Analysis:
-- Base Image Analysis: Identify the exact head pose (front-facing), camera angle, focal length, and lighting direction of the Base Image. Note the skin texture and shadows on the neck/hair.
-- Character Analysis: Extract the key facial landmarks (eyes, nose, mouth shape) from the Character Image.
+1. PRESERVE EVERYTHING OUTSIDE THE MASK:
+   - DO NOT change the background, body, clothing, or any unmasked regions
+   - DO NOT alter the subject's pose, orientation, or body position
+   - DO NOT modify lighting, shadows, or colors outside the masked region
+   - DO NOT change camera angle, composition, or framing
+   - The ONLY change should be within the masked facial region
 
-Reasoning & Planning (Inference Steps):
+2. FACE REPLACEMENT (Masked Region Only):
+   - Replace ONLY the face within the masked region with {character_name}'s facial features
+   - Preserve the exact head pose, rotation, and orientation from the original image
+   - Match skin tone, lighting, and shadows to the original scene exactly
+   - Keep the original hair, ears, neck, and clothing completely unchanged
+   - Only modify the facial region (T-zone, cheeks, jaw) within the mask
 
-Step 1 (Geometry): Map the Character's facial features onto the Base Image's head geometry. CRITICAL: Do not alter the rotation, tilt, or position of the head from the Base Image. The pose must remain locked.
+3. PHOTOREALISTIC QUALITY:
+   - Output must match the original image quality exactly
+   - Preserve all original textures, details, and imperfections
+   - No soft focus, no airbrushing, no artificial smoothing
+   - Natural skin pores, realistic texture, RAW photo quality
+   - The result must look like an unedited photograph
 
-Step 2 (Lighting Match): Adjust the Character's skin tone and shading to match the Base Image's lighting environment exactly. If the Base Image has soft studio light, the face must reflect that.
+4. SEAMLESS BLENDING:
+   - Blend the new face seamlessly with the original image
+   - No visible seams, edges, or boundaries
+   - Perfect color matching and lighting consistency
+   - The face must appear as if it was always part of the original photograph
 
-Step 3 (Blending): Plan the mask edge. Keep the original hair, ears, neck, and clothing of the Base Image. Only replace the facial region (T-zone, cheeks, jaw). Preserve the original hairstyle and hair texture from the Base Image.
-
-Execution: Generate a photorealistic result based on the plan above. The final image must be indistinguishable from a real photo, retaining the exact composition and pose of the Base Image. Natural skin pores, realistic texture, no soft focus, no airbrushing."""
+REMEMBER: Only the masked facial region should change. Everything else must remain identical to the original image."""
     else:
         # Mode 2: Use character hairstyle
-        return f"""Objective: Realistically blend the facial identity from [Source Image - {character_name}] onto the body and pose of [Base Image].
+        return f"""CRITICAL INSTRUCTIONS - READ CAREFULLY:
 
-Input Analysis:
+1. PRESERVE EVERYTHING OUTSIDE THE MASK:
+   - DO NOT change the background, body, clothing, or any unmasked regions
+   - DO NOT alter the subject's pose, orientation, or body position
+   - DO NOT modify lighting, shadows, or colors outside the masked region
+   - DO NOT change camera angle, composition, or framing
+   - The ONLY change should be within the masked facial region
 
-Base Image Analysis: Identify the exact head pose (front-facing), camera angle, focal length, and lighting direction of the Base Image. Note the skin texture and shadows on the neck/hair.
+2. FACE REPLACEMENT (Masked Region Only):
+   - Replace ONLY the face and hair within the masked region with {character_name}'s features
+   - Preserve the exact head pose, rotation, and orientation from the original image
+   - Match skin tone, lighting, and shadows to the original scene exactly
+   - Keep the original ears, neck, and clothing completely unchanged
+   - Only modify the facial region and hair within the mask
 
-Character Analysis: Extract the key facial landmarks (eyes, nose, mouth shape) from the Character Image.
+3. PHOTOREALISTIC QUALITY:
+   - Output must match the original image quality exactly
+   - Preserve all original textures, details, and imperfections
+   - No soft focus, no airbrushing, no artificial smoothing
+   - Natural skin pores, realistic texture, RAW photo quality
+   - The result must look like an unedited photograph
 
-Reasoning & Planning (Inference Steps):
+4. SEAMLESS BLENDING:
+   - Blend the new face and hair seamlessly with the original image
+   - No visible seams, edges, or boundaries
+   - Perfect color matching and lighting consistency
+   - The face must appear as if it was always part of the original photograph
 
-Step 1 (Geometry): Map the Character's facial features onto the Base Image's head geometry. CRITICAL: Do not alter the rotation, tilt, or position of the head from the Base Image. The pose must remain locked.
-
-Step 2 (Lighting Match): Adjust the Character's skin tone and shading to match the Base Image's lighting environment exactly. If the Base Image has soft studio light, the face must reflect that.
-
-Step 3 (Blending): Plan the mask edge. Keep the original ears, neck, and clothing of the Base Image. Replace the facial region (T-zone, cheeks, jaw) AND hair with the Character's hairstyle. Blend the hair naturally into the scene.
-
-Execution: Generate a photorealistic result based on the plan above. The final image must be indistinguishable from a real photo, retaining the exact composition and pose of the Base Image."""
+REMEMBER: Only the masked facial region should change. Everything else must remain identical to the original image."""
 
 
 def run_eacps_inpaint(
