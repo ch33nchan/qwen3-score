@@ -577,72 +577,58 @@ def blend_with_mask(
 
 def create_inpaint_prompt(character_name: str, preserve_init_hair: bool = False) -> str:
     """
-    Create strict prompt for photorealistic inpainting that preserves everything outside mask.
+    Create ultra-strict prompt for photorealistic face replacement.
+    ONLY changes the masked face region, preserves everything else exactly.
     """
     if preserve_init_hair:
         # Mode 1: Preserve init image hairstyle
-        return f"""CRITICAL INSTRUCTIONS - READ CAREFULLY:
+        return f"""CRITICAL INSTRUCTIONS: Replace ONLY the masked facial region with {character_name}'s face. DO NOT change ANYTHING else.
 
-1. PRESERVE EVERYTHING OUTSIDE THE MASK:
-   - DO NOT change the background, body, clothing, or any unmasked regions
-   - DO NOT alter the subject's pose, orientation, or body position
-   - DO NOT modify lighting, shadows, or colors outside the masked region
-   - DO NOT change camera angle, composition, or framing
-   - The ONLY change should be within the masked facial region
+STRICT PRESERVATION RULES:
+- EXACT POSE LOCK: Head orientation, tilt, rotation, and position must be IDENTICAL to the original. Zero tolerance for pose changes.
+- EXACT COMPOSITION: Camera angle, focal length, perspective must remain UNCHANGED.
+- EXACT BACKGROUND: Every pixel outside the mask must remain EXACTLY as in the original image.
+- EXACT LIGHTING: Match lighting direction, intensity, color temperature, and shadows EXACTLY to the original scene.
+- EXACT HAIR: Preserve original hairstyle, hair color, hair texture, and hair position COMPLETELY.
+- EXACT CLOTHING: All clothing, accessories, and body parts outside mask remain UNTOUCHED.
+- EXACT SKIN TEXTURE: Match skin texture quality, pores, and detail level to the original image quality.
 
-2. FACE REPLACEMENT (Masked Region Only):
-   - Replace ONLY the face within the masked region with {character_name}'s facial features
-   - Preserve the exact head pose, rotation, and orientation from the original image
-   - Match skin tone, lighting, and shadows to the original scene exactly
-   - Keep the original hair, ears, neck, and clothing completely unchanged
-   - Only modify the facial region (T-zone, cheeks, jaw) within the mask
+FACE REPLACEMENT ONLY:
+- Replace ONLY the facial features (eyes, nose, mouth, cheeks, jaw) within the masked region.
+- Use {character_name}'s facial identity while maintaining the exact head pose from the original.
+- Blend seamlessly at mask edges with zero visible seams or boundaries.
 
-3. PHOTOREALISTIC QUALITY:
-   - Output must match the original image quality exactly
-   - Preserve all original textures, details, and imperfections
-   - No soft focus, no airbrushing, no artificial smoothing
-   - Natural skin pores, realistic texture, RAW photo quality
-   - The result must look like an unedited photograph
+QUALITY REQUIREMENTS:
+- Photorealistic quality matching or exceeding the original image resolution and detail.
+- Natural skin texture with visible pores and imperfections (no airbrushing).
+- RAW photo quality, unedited appearance, DSLR camera realism.
+- No AI artifacts, no soft focus, no beauty filters, no smoothing.
 
-4. SEAMLESS BLENDING:
-   - Blend the new face seamlessly with the original image
-   - No visible seams, edges, or boundaries
-   - Perfect color matching and lighting consistency
-   - The face must appear as if it was always part of the original photograph
-
-REMEMBER: Only the masked facial region should change. Everything else must remain identical to the original image."""
+OUTPUT: The result must be indistinguishable from the original photograph, with ONLY the face identity changed within the masked region."""
     else:
         # Mode 2: Use character hairstyle
-        return f"""CRITICAL INSTRUCTIONS - READ CAREFULLY:
+        return f"""CRITICAL INSTRUCTIONS: Replace ONLY the masked facial region with {character_name}'s face. DO NOT change ANYTHING else.
 
-1. PRESERVE EVERYTHING OUTSIDE THE MASK:
-   - DO NOT change the background, body, clothing, or any unmasked regions
-   - DO NOT alter the subject's pose, orientation, or body position
-   - DO NOT modify lighting, shadows, or colors outside the masked region
-   - DO NOT change camera angle, composition, or framing
-   - The ONLY change should be within the masked facial region
+STRICT PRESERVATION RULES:
+- EXACT POSE LOCK: Head orientation, tilt, rotation, and position must be IDENTICAL to the original. Zero tolerance for pose changes.
+- EXACT COMPOSITION: Camera angle, focal length, perspective must remain UNCHANGED.
+- EXACT BACKGROUND: Every pixel outside the mask must remain EXACTLY as in the original image.
+- EXACT LIGHTING: Match lighting direction, intensity, color temperature, and shadows EXACTLY to the original scene.
+- EXACT CLOTHING: All clothing, accessories, and body parts outside mask remain UNTOUCHED.
+- EXACT SKIN TEXTURE: Match skin texture quality, pores, and detail level to the original image quality.
 
-2. FACE REPLACEMENT (Masked Region Only):
-   - Replace ONLY the face and hair within the masked region with {character_name}'s features
-   - Preserve the exact head pose, rotation, and orientation from the original image
-   - Match skin tone, lighting, and shadows to the original scene exactly
-   - Keep the original ears, neck, and clothing completely unchanged
-   - Only modify the facial region and hair within the mask
+FACE AND HAIR REPLACEMENT:
+- Replace ONLY the facial features (eyes, nose, mouth, cheeks, jaw) AND hair within the masked region.
+- Use {character_name}'s facial identity and hairstyle while maintaining the exact head pose from the original.
+- Blend seamlessly at mask edges with zero visible seams or boundaries.
 
-3. PHOTOREALISTIC QUALITY:
-   - Output must match the original image quality exactly
-   - Preserve all original textures, details, and imperfections
-   - No soft focus, no airbrushing, no artificial smoothing
-   - Natural skin pores, realistic texture, RAW photo quality
-   - The result must look like an unedited photograph
+QUALITY REQUIREMENTS:
+- Photorealistic quality matching or exceeding the original image resolution and detail.
+- Natural skin texture with visible pores and imperfections (no airbrushing).
+- RAW photo quality, unedited appearance, DSLR camera realism.
+- No AI artifacts, no soft focus, no beauty filters, no smoothing.
 
-4. SEAMLESS BLENDING:
-   - Blend the new face and hair seamlessly with the original image
-   - No visible seams, edges, or boundaries
-   - Perfect color matching and lighting consistency
-   - The face must appear as if it was always part of the original photograph
-
-REMEMBER: Only the masked facial region should change. Everything else must remain identical to the original image."""
+OUTPUT: The result must be indistinguishable from the original photograph, with ONLY the face identity and hair changed within the masked region."""
 
 
 def run_eacps_inpaint(
@@ -728,10 +714,8 @@ def run_eacps_inpaint(
         global_pbar.set_postfix({'seed': seed})
         
         # Generate from face-swapped image (exact identity preserved)
-        # Use original init_image as base to preserve everything outside mask
-        # Only apply diffusion to the masked region
         raw_result = qwen_pipe.generate(
-            image=swapped_base,  # Face-swapped base (identity correct)
+            image=swapped_base,
             prompt=prompt,
             seed=seed,
             num_steps=model.num_inference_steps,
