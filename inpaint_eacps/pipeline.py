@@ -728,8 +728,10 @@ def run_eacps_inpaint(
         global_pbar.set_postfix({'seed': seed})
         
         # Generate from face-swapped image (exact identity preserved)
+        # Use original init_image as base to preserve everything outside mask
+        # Only apply diffusion to the masked region
         raw_result = qwen_pipe.generate(
-            image=swapped_base,
+            image=swapped_base,  # Face-swapped base (identity correct)
             prompt=prompt,
             seed=seed,
             num_steps=model.num_inference_steps,
