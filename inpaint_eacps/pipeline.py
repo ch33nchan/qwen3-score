@@ -526,14 +526,15 @@ def blend_with_mask(
     output: Image.Image,
     original: Image.Image,
     mask: Image.Image,
-    feather_radius: int = 25,
+    feather_radius: int = 15,
     preserve_texture: bool = True,
 ) -> Image.Image:
     """
-    Blend output with original using mask with feature-preserving feathering.
+    Ultra-conservative blending: only replace masked region, preserve everything else exactly.
     
     Args:
         preserve_texture: If True, use minimal blur to preserve skin texture and hair detail
+        feather_radius: Reduced to 15 for tighter blending (was 25)
     """
     if output.size != original.size:
         output = output.resize(original.size, Image.Resampling.LANCZOS)
@@ -543,26 +544,26 @@ def blend_with_mask(
     # Convert to numpy for advanced processing
     mask_array = np.array(mask_resized).astype(float) / 255.0
     
-    # Erode mask by 3 pixels to avoid edge artifacts (reduced from 5)
-    kernel = np.ones((3, 3), np.uint8)
+    # More aggressive erosion to ensure we only blend within mask (5 pixels instead of 3)
+    kernel = np.ones((5, 5), np.uint8)
     mask_binary = (mask_array > 0.5).astype(np.uint8) * 255
-    mask_eroded = cv2.erode(mask_binary, kernel, iterations=1)
+    mask_eroded = cv2.erode(mask_binary, kernel, iterations=2)  # 2 iterations for tighter mask
     
     # Apply feathering only at edges, preserve interior
     if feather_radius > 0:
         # Create distance transform to find mask interior
         dist_transform = cv2.distanceTransform(mask_eroded, cv2.DIST_L2, 5)
         
-        # Feather only within 'feather_radius' pixels of edge
+        # Feather only within 'feather_radius' pixels of edge (reduced from 25 to 15)
         feather_zone = (dist_transform > 0) & (dist_transform < feather_radius)
         
         # Apply Gaussian blur only in feather zone
         mask_float = mask_eroded.astype(float)
         if preserve_texture:
-            # Minimal blur for texture preservation
-            blurred = cv2.GaussianBlur(mask_float, (0, 0), sigmaX=feather_radius // 3)
+            # Ultra-minimal blur for maximum texture preservation
+            blurred = cv2.GaussianBlur(mask_float, (0, 0), sigmaX=feather_radius // 4)  # Reduced blur
         else:
-            blurred = cv2.GaussianBlur(mask_float, (0, 0), sigmaX=feather_radius // 2)
+            blurred = cv2.GaussianBlur(mask_float, (0, 0), sigmaX=feather_radius // 3)
         
         # Blend: use blurred in feather zone, original elsewhere
         mask_final = np.where(feather_zone, blurred, mask_float)
@@ -572,6 +573,7 @@ def blend_with_mask(
     
     mask_pil = Image.fromarray((mask_final * 255).astype(np.uint8))
     
+    # Use composite to blend - this preserves original pixels outside mask exactly
     return Image.composite(output.convert("RGB"), original.convert("RGB"), mask_pil)
 
 
@@ -714,6 +716,7 @@ def run_eacps_inpaint(
         global_pbar.set_postfix({'seed': seed})
         
         # Generate from face-swapped image (exact identity preserved)
+        # Use init_image as base to ensure we only modify masked region
         raw_result = qwen_pipe.generate(
             image=swapped_base,
             prompt=prompt,
@@ -723,8 +726,8 @@ def run_eacps_inpaint(
             negative_prompt=model.negative_prompt,
         )
         
-        # Blend with mask
-        result = blend_with_mask(raw_result, init_image, mask_image)
+        # Ultra-conservative blending: only replace masked region, preserve everything else
+        result = blend_with_mask(raw_result, init_image, mask_image, feather_radius=15, preserve_texture=True)
         
         # Score with multi-model scorer
         scores = scorer.score(result, character_image, init_image)
@@ -788,7 +791,8 @@ def run_eacps_inpaint(
                 negative_prompt=model.negative_prompt,
             )
             
-            result = blend_with_mask(raw_result, init_image, mask_image)
+            # Ultra-conservative blending: only replace masked region, preserve everything else
+            result = blend_with_mask(raw_result, init_image, mask_image, feather_radius=15, preserve_texture=True)
             
             scores = scorer.score(result, character_image, init_image)
             potential = scorer.compute_potential(scores, eacps)

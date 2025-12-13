@@ -38,7 +38,13 @@ class ModelConfig:
         "deepfake artifacts, face morph, blending artifacts, "
         "added facial hair, mustache, beard, stubble that wasn't there, "
         "illustration, painting, 3d render, cgi, anime, manga, "
-        "watermark, text, logo, signature, frame"
+        "watermark, text, logo, signature, frame, "
+        "changed pose, changed orientation, rotated head, tilted head, "
+        "different angle, different perspective, changed body position, "
+        "modified background, changed lighting outside mask, "
+        "altered clothing, changed hair outside mask, modified scene, "
+        "different composition, changed camera angle, "
+        "any changes outside the masked face region"
     )
     
     # Gemini
