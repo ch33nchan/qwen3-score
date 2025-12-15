@@ -16,9 +16,16 @@ import requests
 
 
 def encode_image_to_data_uri(image_path: Path) -> str:
+    # Infer mime from suffix
+    suffix = image_path.suffix.lower().lstrip(".")
+    mime = "png"
+    if suffix in {"jpg", "jpeg"}:
+        mime = "jpeg"
+    elif suffix == "webp":
+        mime = "webp"
     img_bytes = image_path.read_bytes()
     b64 = base64.b64encode(img_bytes).decode("utf-8")
-    return f"data:image/png;base64,{b64}"
+    return f"data:image/{mime};base64,{b64}"
 
 
 def collect_tasks(results_root: Path, limit: int) -> List[dict]:
@@ -34,16 +41,27 @@ def collect_tasks(results_root: Path, limit: int) -> List[dict]:
     for d in selected:
         task_id = d.name.replace("task_", "")
         result_path = d / "result.png"
-        if not result_path.exists():
-            print(f"[skip] {d} missing result.png", file=sys.stderr)
+        init_path = d / "init.png"
+        mask_path = d / "mask.png"
+        char_path = d / "character.png"
+
+        if not (result_path.exists() and init_path.exists() and mask_path.exists() and char_path.exists()):
+            print(f"[skip] {d} missing one of result/init/mask/character", file=sys.stderr)
             continue
 
         data_uri = encode_image_to_data_uri(result_path)
+        init_uri = encode_image_to_data_uri(init_path)
+        mask_uri = encode_image_to_data_uri(mask_path)
+        char_uri = encode_image_to_data_uri(char_path)
+
         tasks.append(
             {
                 "data": {
-                    "id": task_id,
-                    "image": data_uri,
+                    "id": int(task_id),
+                    "image": data_uri,  # result
+                    "init_image": init_uri,
+                    "mask_image": mask_uri,
+                    "character_image": char_uri,
                     "source": "inpaint_eacps",
                     "task_dir": str(d),
                 }
