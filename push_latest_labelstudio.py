@@ -64,12 +64,22 @@ def push_to_labelstudio(api_url: str, api_key: str, project_id: str, tasks: List
         "Content-Type": "application/json",
     }
 
-    resp = requests.post(url, headers=headers, data=json.dumps(tasks), timeout=120)
-    if resp.status_code >= 300:
-        print(f"Failed to push tasks: {resp.status_code} {resp.text}", file=sys.stderr)
+    try:
+        # Use json= to let requests set headers/encoding
+        resp = requests.post(url, headers=headers, json=tasks, timeout=120)
         resp.raise_for_status()
-
-    print(f"Pushed {len(tasks)} task(s) to project {project_id}. Response: {resp.text}")
+        print(f"Pushed {len(tasks)} task(s) to project {project_id}.")
+        print(f"Response: {resp.text}")
+    except requests.HTTPError as e:
+        print(f"Failed to push tasks: {resp.status_code}", file=sys.stderr)
+        try:
+            print(f"Server response: {resp.text}", file=sys.stderr)
+        except Exception:
+            pass
+        print("Payload preview (first task):", file=sys.stderr)
+        if tasks:
+            print(json.dumps(tasks[0], indent=2)[:2000], file=sys.stderr)
+        raise e
 
 
 def main():
