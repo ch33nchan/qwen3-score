@@ -150,7 +150,7 @@ def main():
     parser.add_argument("--project_id", required=True, help="Label Studio project ID")
     parser.add_argument("--results_root", default="inpaint_eacps", help="Path to results root")
     parser.add_argument("--n", type=int, default=5, help="Number of latest tasks to push")
-    parser.add_argument("--delete_annotated", action="store_true", help="Delete annotated tasks before pushing")
+    parser.add_argument("--delete_all", action="store_true", help="Delete ALL tasks before pushing")
     args = parser.parse_args()
 
     results_root = Path(args.results_root)
@@ -158,12 +158,8 @@ def main():
         print(f"Results root not found: {results_root}", file=sys.stderr)
         sys.exit(1)
 
-    # Delete annotated tasks if requested
-    if args.delete_annotated:
-        print("Deleting annotated tasks...")
-        delete_annotated_tasks(args.api_url, args.api_key, args.project_id)
-
     tasks = collect_tasks(results_root, args.n)
+    print(f"Collected {len(tasks)} tasks to push...")
     push_to_labelstudio(args.api_url, args.api_key, args.project_id, tasks)
 
 
