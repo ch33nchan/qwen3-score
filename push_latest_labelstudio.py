@@ -48,15 +48,11 @@ def collect_tasks(results_root: Path, limit: int) -> List[dict]:
 
         data_uri = encode_image_to_data_uri(result_path)
 
-        tasks.append(
-            {
-                "data": {
-                    "id": int(task_id),
-                    "image": data_uri,  # Only result.png
-                    "source": "inpaint_eacps",
-                }
+        tasks.append({
+            "data": {
+                "image": data_uri
             }
-        )
+        })
 
     return tasks
 
@@ -136,20 +132,22 @@ def push_to_labelstudio(api_url: str, api_key: str, project_id: str, tasks: List
     }
 
     try:
-        # Use json= to let requests set headers/encoding
-        resp = requests.post(url, headers=headers, json=tasks, timeout=120)
+        payload = {"tasks": tasks}
+        resp = requests.post(url, headers=headers, json=payload, timeout=120)
         resp.raise_for_status()
+        result = resp.json()
         print(f"Pushed {len(tasks)} task(s) to project {project_id}.")
-        print(f"Response: {resp.text}")
+        print(f"Response: {result}")
     except requests.HTTPError as e:
         print(f"Failed to push tasks: {resp.status_code}", file=sys.stderr)
         try:
-            print(f"Server response: {resp.text}", file=sys.stderr)
+            error_data = resp.json() if resp.text else {}
+            print(f"Server response: {json.dumps(error_data, indent=2)}", file=sys.stderr)
         except Exception:
-            pass
+            print(f"Server response: {resp.text}", file=sys.stderr)
         print("Payload preview (first task):", file=sys.stderr)
         if tasks:
-            print(json.dumps(tasks[0], indent=2)[:2000], file=sys.stderr)
+            print(json.dumps(tasks[0], indent=2)[:500], file=sys.stderr)
         raise e
 
 
