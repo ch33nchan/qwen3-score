@@ -50,7 +50,8 @@ def collect_tasks(results_root: Path, limit: int) -> List[dict]:
 
         tasks.append({
             "data": {
-                "image": data_uri
+                "image": data_uri,
+                "result": data_uri
             }
         })
 
@@ -132,22 +133,19 @@ def push_to_labelstudio(api_url: str, api_key: str, project_id: str, tasks: List
     }
 
     try:
-        payload = {"tasks": tasks}
-        resp = requests.post(url, headers=headers, json=payload, timeout=120)
+        resp = requests.post(url, headers=headers, json=tasks, timeout=120)
         resp.raise_for_status()
         result = resp.json()
         print(f"Pushed {len(tasks)} task(s) to project {project_id}.")
         print(f"Response: {result}")
     except requests.HTTPError as e:
         print(f"Failed to push tasks: {resp.status_code}", file=sys.stderr)
+        print(f"Full server response: {resp.text}", file=sys.stderr)
         try:
-            error_data = resp.json() if resp.text else {}
-            print(f"Server response: {json.dumps(error_data, indent=2)}", file=sys.stderr)
+            error_data = resp.json()
+            print(f"Parsed error: {json.dumps(error_data, indent=2)}", file=sys.stderr)
         except Exception:
-            print(f"Server response: {resp.text}", file=sys.stderr)
-        print("Payload preview (first task):", file=sys.stderr)
-        if tasks:
-            print(json.dumps(tasks[0], indent=2)[:500], file=sys.stderr)
+            pass
         raise e
 
 
