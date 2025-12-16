@@ -41,17 +41,27 @@ def collect_tasks(results_root: Path, limit: int) -> List[dict]:
     for d in selected:
         task_id = d.name.replace("task_", "")
         result_path = d / "result.png"
+        init_path = d / "init.png"
+        character_path = d / "character.png"
 
         if not result_path.exists():
             print(f"[skip] {d} missing result.png", file=sys.stderr)
             continue
 
-        data_uri = encode_image_to_data_uri(result_path)
+        result_uri = encode_image_to_data_uri(result_path)
+        
+        task_data = {
+            "image": result_uri
+        }
+        
+        if init_path.exists():
+            task_data["init_image"] = encode_image_to_data_uri(init_path)
+        
+        if character_path.exists():
+            task_data["character_image"] = encode_image_to_data_uri(character_path)
 
         tasks.append({
-            "data": {
-                "image": data_uri
-            }
+            "data": task_data
         })
 
     return tasks
