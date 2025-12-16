@@ -75,10 +75,18 @@ def get_existing_tasks(api_url: str, api_key: str, project_id: str) -> List[dict
         resp = requests.get(url, headers=headers, params=params, timeout=30)
         resp.raise_for_status()
         data = resp.json()
-        all_tasks.extend(data.get("results", []))
         
-        if not data.get("has_next", False):
+        # Handle both list response and dict with pagination
+        if isinstance(data, list):
+            all_tasks.extend(data)
             break
+        elif isinstance(data, dict):
+            all_tasks.extend(data.get("results", []))
+            if not data.get("has_next", False):
+                break
+        else:
+            break
+        
         page += 1
     
     return all_tasks
