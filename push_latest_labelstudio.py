@@ -127,24 +127,17 @@ def push_to_labelstudio(api_url: str, api_key: str, project_id: str, tasks: List
         return
 
     url = f"{api_url.rstrip('/')}/api/projects/{project_id}/import"
-    headers = {"Authorization": f"Token {api_key}"}
+    headers = {
+        "Authorization": f"Token {api_key}",
+        "Content-Type": "application/json",
+    }
 
-    import tempfile
-    import os
-    
-    with tempfile.NamedTemporaryFile(mode='w', suffix='.jsonl', delete=False) as f:
-        for task in tasks:
-            f.write(json.dumps(task) + '\n')
-        temp_file = f.name
-    
     try:
-        with open(temp_file, 'rb') as f:
-            files = {'file': ('tasks.jsonl', f, 'application/jsonl')}
-            resp = requests.post(url, headers=headers, files=files, timeout=120)
-            resp.raise_for_status()
-            result = resp.json()
-            print(f"Pushed {len(tasks)} task(s) to project {project_id}.")
-            print(f"Response: {result}")
+        resp = requests.post(url, headers=headers, json=tasks, timeout=120)
+        resp.raise_for_status()
+        result = resp.json()
+        print(f"Pushed {len(tasks)} task(s) to project {project_id}.")
+        print(f"Response: {result}")
     except requests.HTTPError as e:
         print(f"Failed to push tasks: {resp.status_code}", file=sys.stderr)
         print(f"Full server response: {resp.text}", file=sys.stderr)
@@ -154,9 +147,6 @@ def push_to_labelstudio(api_url: str, api_key: str, project_id: str, tasks: List
         except Exception:
             pass
         raise e
-    finally:
-        if os.path.exists(temp_file):
-            os.unlink(temp_file)
 
 
 def main():
