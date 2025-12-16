@@ -50,8 +50,7 @@ def collect_tasks(results_root: Path, limit: int) -> List[dict]:
 
         tasks.append({
             "data": {
-                "image": data_uri,
-                "result": data_uri
+                "image": data_uri
             }
         })
 
