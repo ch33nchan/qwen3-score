@@ -61,6 +61,61 @@ def collect_tasks(results_root: Path, limit: int) -> List[dict]:
     return tasks
 
 
+def get_existing_tasks(api_url: str, api_key: str, project_id: str) -> List[dict]:
+    """Get all existing tasks from Label Studio project."""
+    url = f"{api_url.rstrip('/')}/api/projects/{project_id}/tasks"
+    headers = {"Authorization": f"Token {api_key}"}
+    
+    all_tasks = []
+    page = 1
+    page_size = 100
+    
+    while True:
+        params = {"page": page, "page_size": page_size}
+        resp = requests.get(url, headers=headers, params=params, timeout=30)
+        resp.raise_for_status()
+        data = resp.json()
+        all_tasks.extend(data.get("results", []))
+        
+        if not data.get("has_next", False):
+            break
+        page += 1
+    
+    return all_tasks
+
+
+def delete_annotated_tasks(api_url: str, api_key: str, project_id: str) -> int:
+    """Delete all annotated tasks, keep only unannotated ones."""
+    headers = {"Authorization": f"Token {api_key}"}
+    
+    # Get all tasks
+    existing = get_existing_tasks(api_url, api_key, project_id)
+    
+    annotated_ids = []
+    for task in existing:
+        # Check if task has annotations
+        if task.get("annotations") and len(task.get("annotations", [])) > 0:
+            annotated_ids.append(task["id"])
+    
+    if not annotated_ids:
+        print("No annotated tasks to delete.")
+        return 0
+    
+    # Delete annotated tasks
+    deleted = 0
+    for task_id in annotated_ids:
+        delete_url = f"{api_url.rstrip('/')}/api/tasks/{task_id}"
+        try:
+            resp = requests.delete(delete_url, headers=headers, timeout=30)
+            resp.raise_for_status()
+            deleted += 1
+        except requests.HTTPError as e:
+            print(f"Failed to delete task {task_id}: {e}", file=sys.stderr)
+    
+    print(f"Deleted {deleted} annotated task(s).")
+    return deleted
+
+
 def push_to_labelstudio(api_url: str, api_key: str, project_id: str, tasks: List[dict]) -> None:
     if not tasks:
         print("No tasks to push.")
@@ -95,14 +150,20 @@ def main():
     parser.add_argument("--api_key", required=True, help="Label Studio API key")
     parser.add_argument("--api_url", required=True, help="Label Studio base URL (e.g., https://label.dashtoon.ai)")
     parser.add_argument("--project_id", required=True, help="Label Studio project ID")
-    parser.add_argument("--results_root", default="outputs/inpaint_eacps", help="Path to results root")
+    parser.add_argument("--results_root", default="inpaint_eacps", help="Path to results root")
     parser.add_argument("--n", type=int, default=5, help="Number of latest tasks to push")
+    parser.add_argument("--delete_annotated", action="store_true", help="Delete annotated tasks before pushing")
     args = parser.parse_args()
 
     results_root = Path(args.results_root)
     if not results_root.exists():
         print(f"Results root not found: {results_root}", file=sys.stderr)
         sys.exit(1)
+
+    # Delete annotated tasks if requested
+    if args.delete_annotated:
+        print("Deleting annotated tasks...")
+        delete_annotated_tasks(args.api_url, args.api_key, args.project_id)
 
     tasks = collect_tasks(results_root, args.n)
     push_to_labelstudio(args.api_url, args.api_key, args.project_id, tasks)
