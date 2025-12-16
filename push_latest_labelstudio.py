@@ -88,26 +88,21 @@ def get_existing_tasks(api_url: str, api_key: str, project_id: str) -> List[dict
     return all_tasks
 
 
-def delete_annotated_tasks(api_url: str, api_key: str, project_id: str) -> int:
-    """Delete all annotated tasks, keep only unannotated ones."""
+def delete_all_tasks(api_url: str, api_key: str, project_id: str) -> int:
+    """Delete ALL tasks from the project."""
     headers = {"Authorization": f"Token {api_key}"}
     
     # Get all tasks
     existing = get_existing_tasks(api_url, api_key, project_id)
     
-    annotated_ids = []
-    for task in existing:
-        # Check if task has annotations
-        if task.get("annotations") and len(task.get("annotations", [])) > 0:
-            annotated_ids.append(task["id"])
-    
-    if not annotated_ids:
-        print("No annotated tasks to delete.")
+    if not existing:
+        print("No tasks to delete.")
         return 0
     
-    # Delete annotated tasks
+    # Delete all tasks
     deleted = 0
-    for task_id in annotated_ids:
+    for task in existing:
+        task_id = task["id"]
         delete_url = f"{api_url.rstrip('/')}/api/tasks/{task_id}"
         try:
             resp = requests.delete(delete_url, headers=headers, timeout=30)
@@ -116,7 +111,7 @@ def delete_annotated_tasks(api_url: str, api_key: str, project_id: str) -> int:
         except requests.HTTPError as e:
             print(f"Failed to delete task {task_id}: {e}", file=sys.stderr)
     
-    print(f"Deleted {deleted} annotated task(s).")
+    print(f"Deleted {deleted} task(s).")
     return deleted
 
 
