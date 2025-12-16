@@ -41,29 +41,19 @@ def collect_tasks(results_root: Path, limit: int) -> List[dict]:
     for d in selected:
         task_id = d.name.replace("task_", "")
         result_path = d / "result.png"
-        init_path = d / "init.png"
-        mask_path = d / "mask.png"
-        char_path = d / "character.png"
 
-        if not (result_path.exists() and init_path.exists() and mask_path.exists() and char_path.exists()):
-            print(f"[skip] {d} missing one of result/init/mask/character", file=sys.stderr)
+        if not result_path.exists():
+            print(f"[skip] {d} missing result.png", file=sys.stderr)
             continue
 
         data_uri = encode_image_to_data_uri(result_path)
-        init_uri = encode_image_to_data_uri(init_path)
-        mask_uri = encode_image_to_data_uri(mask_path)
-        char_uri = encode_image_to_data_uri(char_path)
 
         tasks.append(
             {
                 "data": {
                     "id": int(task_id),
-                    "image": data_uri,  # result
-                    "init_image": init_uri,
-                    "mask_image": mask_uri,
-                    "character_image": char_uri,
+                    "image": data_uri,  # Only result.png
                     "source": "inpaint_eacps",
-                    "task_dir": str(d),
                 }
             }
         )
