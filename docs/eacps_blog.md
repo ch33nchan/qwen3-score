@@ -75,7 +75,9 @@ This explains why even naive best-of-N helps—more samples = better expected qu
 The key insight is that **seed space has structure**. Nearby seeds often produce outputs that share high-level features (pose, composition) while varying low-level details (texture, lighting). This creates "hills" in the quality landscape—regions where many nearby seeds produce good results.
 
 EACPS exploits this by:
+
 1. **Exploration**: Broadly sampling to find promising regions
+
 2. **Exploitation**: Densely sampling around promising seeds
 
 This is similar to evolutionary algorithms, but applied to the discrete seed space rather than continuous parameters.
